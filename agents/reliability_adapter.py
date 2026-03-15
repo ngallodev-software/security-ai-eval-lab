@@ -24,7 +24,7 @@ import uuid
 from typing import Any, Dict
 
 from src.db.repository import ReliabilityRepository
-from src.db.session import async_session as reliability_session
+from src.db.session import get_db as reliability_get_db
 from src.engine.decision_engine import RetryPolicy, RetryRule
 from src.engine.phase_executor import PhaseExecutor
 from src.core.models import FailureCategory
@@ -161,7 +161,12 @@ class PhaseExecutorAdapter(ReliabilityExecutorProtocol):
             "reliability_prompt_id": str,
         }
         """
-        async with reliability_session() as session:
+        # get_db() is the reliability-fw's canonical session factory.
+        # It's an async generator that yields exactly one session; we drive
+        # it manually since we're outside a FastAPI dependency context.
+        _db_gen = reliability_get_db()
+        session = await anext(_db_gen)
+        try:
             repo = ReliabilityRepository(session)
             executor = PhaseExecutor(
                 repository=repo,
@@ -186,6 +191,9 @@ class PhaseExecutorAdapter(ReliabilityExecutorProtocol):
                 input_artifact=input_artifact,
                 retry_policy=_DEFAULT_RETRY_POLICY,
             )
+        finally:
+            # Close the generator so get_db()'s `async with session` block exits.
+            await _db_gen.aclose()
 
         if fw_result["status"] != "SUCCESS":
             # Raise explicitly so the runner can log and skip the sample
