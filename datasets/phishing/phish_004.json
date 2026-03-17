@@ -1,0 +1,9 @@
+{
+  "id": "phish_004",
+  "label": "phishing",
+  "email_text": "From: IT Service Desk <support@company-helpdesk-reset.com>\nSubject: Password reset required\n\nReset now:\nhttps://company-helpdesk-reset.com/reset",
+  "metadata": {
+    "source_type": "synthetic",
+    "scenario": "internal IT impersonation"
+  }
+}

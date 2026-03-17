@@ -1,0 +1,9 @@
+{
+  "id": "benign_004",
+  "label": "benign",
+  "email_text": "From: DocuSign <dse@docusign.net>\nSubject: Completed NDA\n\nThe document has been completed.",
+  "metadata": {
+    "source_type": "synthetic",
+    "scenario": "completed document notice"
+  }
+}

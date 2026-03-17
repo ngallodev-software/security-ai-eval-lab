@@ -1,0 +1,9 @@
+{
+  "id": "imp_002",
+  "label": "impersonation",
+  "email_text": "From: Vendor Relations <billing@paypa1-support-services.com>\nSubject: Invoice issue\n\nConfirm payment details.",
+  "metadata": {
+    "source_type": "synthetic",
+    "scenario": "vendor impersonation"
+  }
+}

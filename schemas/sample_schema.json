@@ -1,5 +1,27 @@
 {
-    "id": "sample_001",
-    "email_text": "...",
-    "label": "phishing"
+  "type": "object",
+  "required": [
+    "id",
+    "label",
+    "email_text"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string",
+      "enum": [
+        "phishing",
+        "impersonation",
+        "benign"
+      ]
+    },
+    "email_text": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    }
+  }
 }

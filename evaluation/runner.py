@@ -142,24 +142,12 @@ async def run_evaluation(dataset_path: str, name: str, model: str, dry_run: bool
 
     print(f"Loaded {len(samples)} samples from {dataset_path}")
 
-    async with eval_session() as eval_db:
-        eval_repo = EvalRepository(eval_db)
-        llm_client = AnthropicClient(model=model)
-        adapter = PhaseExecutorAdapter(llm_client=llm_client)
+    llm_client = AnthropicClient(model=model)
+    adapter = PhaseExecutorAdapter(llm_client=llm_client)
+    results: list[dict] = []
 
-        # Create the evaluation run record.
-        evaluation_run_id = await eval_repo.create_evaluation_run(
-            {
-                "name": name,
-                "dataset_path": dataset_path,
-                "model": model,
-                "created_at": datetime.utcnow(),
-            }
-        )
-        print(f"evaluation_run_id: {evaluation_run_id}\n")
-
-        results: list[dict] = []
-
+    if dry_run:
+        print("[dry-run] skipping evaluation_runs/investigation_results writes\n")
         for sample in samples:
             print(f"  investigating {sample['id']} (actual={sample['label']}) ...", end=" ", flush=True)
             try:
@@ -169,8 +157,30 @@ async def run_evaluation(dataset_path: str, name: str, model: str, dry_run: bool
                 continue
             results.append(result)
             print(f"predicted={result['predicted_label']}  score={result['risk_score']:.2f}")
+    else:
+        async with eval_session() as eval_db:
+            eval_repo = EvalRepository(eval_db)
 
-            if not dry_run:
+            # Create the evaluation run record.
+            evaluation_run_id = await eval_repo.create_evaluation_run(
+                {
+                    "name": name,
+                    "dataset_path": dataset_path,
+                    "model": model,
+                    "created_at": datetime.utcnow(),
+                }
+            )
+            print(f"evaluation_run_id: {evaluation_run_id}\n")
+
+            for sample in samples:
+                print(f"  investigating {sample['id']} (actual={sample['label']}) ...", end=" ", flush=True)
+                try:
+                    result = await investigate_sample(sample, adapter)
+                except RuntimeError as exc:
+                    print(f"FAILED — {exc}", file=sys.stderr)
+                    continue
+                results.append(result)
+                print(f"predicted={result['predicted_label']}  score={result['risk_score']:.2f}")
                 await eval_repo.save_investigation_result(
                     {**result, "evaluation_run_id": evaluation_run_id}
                 )

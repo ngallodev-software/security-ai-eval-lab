@@ -1,0 +1,9 @@
+{
+  "id": "benign_001",
+  "label": "benign",
+  "email_text": "From: GitHub <noreply@github.com>\nSubject: Weekly summary\n\nHere is your repository activity summary.",
+  "metadata": {
+    "source_type": "synthetic",
+    "scenario": "routine notification"
+  }
+}
