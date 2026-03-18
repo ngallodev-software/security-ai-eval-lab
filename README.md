@@ -34,7 +34,7 @@ rule-based systems miss. Separating the two layers means:
 
 ```mermaid
 flowchart TD
-    A["Labeled Email Sample\nphishing / impersonation / benign"] --> B[EmailThreatInvestigationAgent]
+    A["Labeled Email Sample\nphishing / impersonation / benign"] --> B[evaluation.runner]
 
     B --> C[Deterministic Signal Extraction]
     C --> C1[Sender Domain]
@@ -49,38 +49,37 @@ flowchart TD
     C4 --> D
     C5 --> D
 
-    D --> E["ai-reliability-fw\nPhaseExecutor.execute()"]
-    E --> E1[Input Validation]
-    E --> E2[LLM Call]
-    E --> E3[Output Validation]
-    E --> E4[Retry / Escalation Policy]
-    E --> E5[Call Audit / Cost / Latency]
+    D --> E["PhaseExecutorAdapter\nsecurity-ai-eval-lab"]
+    E --> F["ai-reliability-fw\nPhaseExecutor.execute()"]
+    F --> F1[Input Validation]
+    F --> F2[LLM Call]
+    F --> F3[Output Validation]
+    F --> F4[Retry / Escalation Policy]
+    F --> F5[Call Audit / Cost / Latency]
 
-    E5 --> F[Investigation Result]
-    E4 --> F
-    E3 --> F
+    F5 --> G[Investigation Result]
+    F4 --> G
+    F3 --> G
 
-    F --> F1[Predicted Label]
-    F --> F2[Risk Score]
-    F --> F3[Explanation]
-    F --> F4[Timeline / Audit Log]
-    F --> F5[Signal Snapshot]
+    G --> G1[Predicted Label]
+    G --> G2[Risk Score]
+    G --> G3[Explanation]
+    G --> G4[Timeline / Audit Log]
+    G --> G5[Signal Snapshot]
 
-    F --> G[Evaluation Runner]
-    G --> G1[Accuracy]
-    G --> G2[Precision / Recall / F1]
-    G --> G3[False Positives / False Negatives]
-    G --> G4[Latency / Cost Comparison]
+    G --> H[EvalRepository]
+    H --> H1[evaluation_runs]
+    H --> H2[investigation_results]
 
-    G --> H[Markdown / JSON Report]
+    H2 --> I[Accuracy / Precision / Recall / F1]
 ```
 
 ## MVP capabilities
 
 - Phishing, impersonation, and benign email classification
 - Deterministic signal extraction: sender domain, URLs, auth results (SPF/DKIM/DMARC), domain age, brand similarity
-- LLM reasoning via Anthropic API with input/output validation and retry logic
-- Reproducible evaluation runs with per-sample results stored in Postgres
+- LLM reasoning via ai-reliability-fw's `PhaseExecutor` over Anthropic API with input/output validation and retry logic
+- Reproducible evaluation runs with per-sample results stored in the eval-lab tables in Postgres
 - Accuracy, precision, recall, and F1 metrics printed after each run
 - FakeReliabilityExecutor for local testing without a DB or API key
 
@@ -88,11 +87,11 @@ flowchart TD
 
 | Component | Location | Purpose |
 |---|---|---|
-| `EmailThreatInvestigationAgent` | `agents/email_threat_agent.py` | Orchestrates signal extraction and LLM call |
-| `PhaseExecutorAdapter` | `agents/reliability_adapter.py` | Connects to ai-reliability-fw's PhaseExecutor |
+| `EmailThreatInvestigationAgent` | `agents/email_threat_agent.py` | Sync quickstart agent for the fake executor path |
+| `PhaseExecutorAdapter` | `agents/reliability_adapter.py` | Async bridge to ai-reliability-fw's `PhaseExecutor` |
 | `AnthropicClient` | `llm/anthropic_client.py` | Anthropic Messages API client |
-| `EvalRepository` | `db/repository.py` | Persists evaluation_runs and investigation_results |
-| Evaluation runner | `evaluation/runner.py` | End-to-end async runner |
+| `EvalRepository` | `db/repository.py` | Persists `evaluation_runs` and `investigation_results` only |
+| Evaluation runner | `evaluation/runner.py` | Loads samples, extracts signals, calls the adapter, stores results, prints metrics |
 | Metrics | `evaluation/metrics.py` | Accuracy, precision, recall, F1 |
 
 ## Dataset format
@@ -134,7 +133,7 @@ cd /lump/apps/security-ai-eval-lab
 python3 -m examples.run_eval
 
 # Full evaluation run (requires DATABASE_URL and ANTHROPIC_API_KEY)
-python3 -m evaluation.runner --dataset datasets/ --name my-run-001
+python3 -m evaluation.runner --dataset datasets/ --name my-run-001 --model claude-haiku-4-5-20251001
 
 # Dry-run (runs inference but skips DB writes)
 python3 -m evaluation.runner --dataset datasets/ --name test --dry-run
@@ -166,7 +165,7 @@ Accuracy:   90.0%
 - Input validation rejects prompt-injection patterns before the LLM is called.
 - Output is validated against a JSON schema; non-conforming responses trigger retries.
 - Safety flags escalate immediately without retry.
-- All LLM calls are persisted with latency, cost, and retry count — no silent failures.
+- All reliability-layer calls are persisted with latency, cost, and retry count in `ai-reliability-fw`; eval-lab stores only the evaluation records and cross-reference UUIDs.
 - No live email scanning, no production mail infrastructure, no offensive tooling.
 
 ## Why this matters
