@@ -1,16 +1,16 @@
-"""
-Reliability adapter for security-ai-eval-lab.
+"""Reliability adapter for security-ai-eval-lab.
 
-Wraps ai-reliability-fw's PhaseExecutor so EmailThreatInvestigationAgent
-can call it through the existing ReliabilityExecutorProtocol interface.
+Wraps ai-reliability-fw's PhaseExecutor so the evaluation runner can call it
+through the existing ReliabilityExecutorProtocol interface.
 
 Responsibilities:
 - Create or reuse the workflow, prompt, and workflow_run rows that
   PhaseExecutor requires before execute() is called.
 - Serialize the evidence bundle deterministically.
 - Call PhaseExecutor.execute().
-- Parse the returned artifact into the structured output the agent expects.
-- Surface reliability metadata (call_id, model, latency_ms, token_cost_usd).
+- Normalize the returned artifact into the structured output the runner
+  expects.
+- Surface reliability metadata from the framework success payload.
 
 What this adapter does NOT do:
 - Persist llm_calls or escalation_records (PhaseExecutor handles that).
@@ -73,6 +73,51 @@ _DEFAULT_RETRY_POLICY = RetryPolicy(
         ),
     ],
 )
+
+
+def _serialize_evidence_bundle(evidence_bundle: Dict[str, Any]) -> str:
+    """Return a stable JSON representation for the framework call path."""
+    return json.dumps(
+        evidence_bundle,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+
+
+def _normalize_success_payload(
+    *,
+    artifact_json: Dict[str, Any],
+    fw_result: Dict[str, Any],
+    run_id: uuid.UUID,
+    phase_id: uuid.UUID,
+    prompt_id: uuid.UUID,
+) -> Dict[str, Any]:
+    output = {
+        "predicted_label": artifact_json["predicted_label"],
+        "risk_score": float(artifact_json["risk_score"]),
+        "confidence": float(artifact_json["confidence"]),
+        "explanation": artifact_json["explanation"],
+    }
+    call_id = fw_result.get("call_id")
+    return {
+        "predicted_label": output["predicted_label"],
+        "risk_score": output["risk_score"],
+        "confidence": output["confidence"],
+        "explanation": output["explanation"],
+        "output": output,
+        "reliability_run_id": str(run_id),
+        "reliability_phase_id": str(phase_id),
+        "reliability_prompt_id": str(prompt_id),
+        "reliability_call_id": call_id,
+        "call_id": call_id,
+        "provider": fw_result.get("provider"),
+        "model": fw_result.get("model"),
+        "latency_ms": fw_result.get("latency_ms"),
+        "input_tokens": fw_result.get("input_tokens"),
+        "output_tokens": fw_result.get("output_tokens"),
+        "token_cost_usd": fw_result.get("token_cost_usd"),
+    }
 
 
 class PhaseExecutorAdapter(ReliabilityExecutorProtocol):
@@ -140,7 +185,8 @@ class PhaseExecutorAdapter(ReliabilityExecutorProtocol):
         *,
         phase_id: str,
         prompt_id: str,
-        payload: Dict[str, Any],
+        payload: Dict[str, Any] | None = None,
+        evidence_bundle: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
         """
         Full async execution path: setup rows → execute → parse output.
@@ -164,6 +210,10 @@ class PhaseExecutorAdapter(ReliabilityExecutorProtocol):
         # get_db() is the reliability-fw's canonical session factory.
         # It's an async generator that yields exactly one session; we drive
         # it manually since we're outside a FastAPI dependency context.
+        structured_evidence = evidence_bundle if evidence_bundle is not None else payload
+        if structured_evidence is None:
+            raise ValueError("payload or evidence_bundle is required")
+
         _db_gen = reliability_get_db()
         session = await anext(_db_gen)
         try:
@@ -182,7 +232,7 @@ class PhaseExecutorAdapter(ReliabilityExecutorProtocol):
             run_id = await self._create_run(repo)
 
             # Deterministic serialization of the evidence bundle.
-            input_artifact = json.dumps(payload, sort_keys=True, ensure_ascii=False)
+            input_artifact = _serialize_evidence_bundle(structured_evidence)
 
             fw_result = await executor.execute(
                 run_id=run_id,
@@ -206,22 +256,13 @@ class PhaseExecutorAdapter(ReliabilityExecutorProtocol):
             )
 
         artifact_json = json.loads(fw_result["artifact"])
-
-        return {
-            "output": {
-                "predicted_label": artifact_json["predicted_label"],
-                "risk_score": float(artifact_json["risk_score"]),
-                "confidence": float(artifact_json["confidence"]),
-                "explanation": artifact_json["explanation"],
-            },
-            "call_id": fw_result.get("call_id"),
-            "model": fw_result.get("model"),
-            "latency_ms": fw_result.get("latency_ms"),
-            "token_cost_usd": fw_result.get("token_cost_usd"),
-            "reliability_run_id": str(run_id),
-            "reliability_phase_id": str(_PHASE_ID),
-            "reliability_prompt_id": str(resolved_prompt_id),
-        }
+        return _normalize_success_payload(
+            artifact_json=artifact_json,
+            fw_result=fw_result,
+            run_id=run_id,
+            phase_id=_PHASE_ID,
+            prompt_id=resolved_prompt_id,
+        )
 
     # ------------------------------------------------------------------
     # Sync shim (satisfies ReliabilityExecutorProtocol for completeness)

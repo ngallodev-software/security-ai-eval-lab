@@ -4,6 +4,7 @@ from dataclasses import dataclass, asdict
 from typing import Any, Dict, List, Optional
 import re
 import time
+import uuid
 from urllib.parse import urlparse
 
 
@@ -162,7 +163,7 @@ class FakeReliabilityExecutor(ReliabilityExecutorProtocol):
     Replace with PhaseExecutor adapter from ai-reliability-fw.
     """
 
-    def execute(self, *, phase_id: str, prompt_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_result(self, *, phase_id: str, prompt_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         signals = payload["signals"]
         sender_domain = signals.get("sender_domain") or ""
         brand = signals.get("brand_similarity", {}).get("matched_brand")
@@ -191,18 +192,48 @@ class FakeReliabilityExecutor(ReliabilityExecutorProtocol):
         else:
             predicted_label = "benign"
 
+        response_raw = {
+            "predicted_label": predicted_label,
+            "risk_score": risk_score,
+            "confidence": confidence,
+            "explanation": explanation,
+        }
+        run_id = uuid.uuid5(uuid.NAMESPACE_URL, f"fake-run:{phase_id}:{prompt_id}:{payload.get('email_text', '')}")
+        call_id = uuid.uuid5(uuid.NAMESPACE_URL, f"fake-call:{phase_id}:{prompt_id}:{payload.get('email_text', '')}")
         return {
-            "output": {
-                "predicted_label": predicted_label,
-                "risk_score": risk_score,
-                "confidence": confidence,
-                "explanation": explanation,
-            },
-            "call_id": "fake-call-id-001",
+            "predicted_label": predicted_label,
+            "risk_score": risk_score,
+            "confidence": confidence,
+            "explanation": explanation,
+            "output": response_raw,
+            "reliability_run_id": str(run_id),
+            "reliability_phase_id": str(uuid.uuid5(uuid.NAMESPACE_URL, f"fake-phase:{phase_id}")),
+            "reliability_prompt_id": str(uuid.uuid5(uuid.NAMESPACE_URL, f"fake-prompt:{prompt_id}")),
+            "reliability_call_id": str(call_id),
+            "call_id": str(call_id),
+            "provider": "fake-reliability",
             "model": "fake-llm",
             "latency_ms": 42,
+            "input_tokens": 0,
+            "output_tokens": 0,
             "token_cost_usd": 0.0,
         }
+
+    def execute(self, *, phase_id: str, prompt_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        return self._build_result(phase_id=phase_id, prompt_id=prompt_id, payload=payload)
+
+    async def execute_async(
+        self,
+        *,
+        phase_id: str,
+        prompt_id: str,
+        payload: Dict[str, Any] | None = None,
+        evidence_bundle: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        structured_payload = evidence_bundle if evidence_bundle is not None else payload
+        if structured_payload is None:
+            raise ValueError("payload or evidence_bundle is required")
+        return self._build_result(phase_id=phase_id, prompt_id=prompt_id, payload=structured_payload)
 
 
 # -----------------------------
@@ -271,7 +302,7 @@ class EmailThreatInvestigationAgent:
 
         total_ms = int((time.perf_counter() - start) * 1000)
 
-        output = llm_result["output"]
+        output = llm_result.get("output", llm_result)
         timeline.append(f"complete ({total_ms} ms)")
 
         return InvestigationResult(
@@ -290,9 +321,12 @@ class EmailThreatInvestigationAgent:
                 "brand_similarity": asdict(signals.brand_similarity),
             },
             llm={
+                "provider": llm_result.get("provider"),
                 "model": llm_result.get("model"),
                 "call_id": llm_result.get("call_id"),
                 "latency_ms": llm_result.get("latency_ms"),
+                "input_tokens": llm_result.get("input_tokens"),
+                "output_tokens": llm_result.get("output_tokens"),
                 "token_cost_usd": llm_result.get("token_cost_usd"),
             },
             timeline=timeline,

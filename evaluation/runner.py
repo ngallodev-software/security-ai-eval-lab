@@ -21,14 +21,13 @@ import asyncio
 import json
 import sys
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
-from agents.reliability_adapter import PhaseExecutorAdapter
+from agents.email_threat_agent import FakeReliabilityExecutor
 from db.repository import EvalRepository
 from db.session import async_session as eval_session
 from evaluation.metrics import compute_accuracy, compute_label_stats
-from llm.anthropic_client import AnthropicClient
 
 
 # ---------------------------------------------------------------------------
@@ -44,21 +43,32 @@ def load_samples(dataset_root: str) -> list[dict]:
     return samples
 
 
+def _ensure_reliability_fw_on_path() -> None:
+    for candidate in (
+        Path("/lump/apps/ai-reliability-fw/src"),
+        Path("/tmp/codex-worktrees/ai-reliability-fw/src"),
+    ):
+        if candidate.exists():
+            candidate_str = str(candidate)
+            if candidate_str not in sys.path:
+                sys.path.insert(0, candidate_str)
+            return
+    raise RuntimeError("Could not locate ai-reliability-fw/src for the live runner path")
+
+
 # ---------------------------------------------------------------------------
 # Single-sample investigation (async)
 # ---------------------------------------------------------------------------
 
 async def investigate_sample(
     sample: dict,
-    adapter: PhaseExecutorAdapter,
+    adapter,
 ) -> dict:
     """
     Run deterministic signals + LLM classification for one sample.
 
     Returns a flat dict ready to insert into investigation_results.
     """
-    # EmailThreatInvestigationAgent is sync; the async adapter is called
-    # directly here so we can await it properly.
     from agents.email_threat_agent import (
         extract_sender_domain,
         extract_urls,
@@ -111,7 +121,7 @@ async def investigate_sample(
     total_ms = int((time.perf_counter() - start) * 1000)
     timeline.append(f"complete ({total_ms} ms)")
 
-    output = fw_result["output"]
+    output = fw_result.get("output", fw_result)
     return {
         "sample_id": sample["id"],
         "actual_label": sample["label"],
@@ -127,6 +137,12 @@ async def investigate_sample(
         "reliability_prompt_id": uuid.UUID(fw_result["reliability_prompt_id"]),
         # call_id is nullable per spec.
         "reliability_call_id": uuid.UUID(fw_result["call_id"]) if fw_result.get("call_id") else None,
+        "provider": fw_result.get("provider"),
+        "model": fw_result.get("model"),
+        "latency_ms": fw_result.get("latency_ms"),
+        "input_tokens": fw_result.get("input_tokens"),
+        "output_tokens": fw_result.get("output_tokens"),
+        "token_cost_usd": fw_result.get("token_cost_usd"),
     }
 
 
@@ -142,12 +158,11 @@ async def run_evaluation(dataset_path: str, name: str, model: str, dry_run: bool
 
     print(f"Loaded {len(samples)} samples from {dataset_path}")
 
-    llm_client = AnthropicClient(model=model)
-    adapter = PhaseExecutorAdapter(llm_client=llm_client)
     results: list[dict] = []
 
     if dry_run:
-        print("[dry-run] skipping evaluation_runs/investigation_results writes\n")
+        adapter = FakeReliabilityExecutor()
+        print("[dry-run] skipping evaluation_runs/investigation_results writes")
         for sample in samples:
             print(f"  investigating {sample['id']} (actual={sample['label']}) ...", end=" ", flush=True)
             try:
@@ -158,6 +173,11 @@ async def run_evaluation(dataset_path: str, name: str, model: str, dry_run: bool
             results.append(result)
             print(f"predicted={result['predicted_label']}  score={result['risk_score']:.2f}")
     else:
+        _ensure_reliability_fw_on_path()
+        from agents.reliability_adapter import PhaseExecutorAdapter
+        from llm.anthropic_client import AnthropicClient
+
+        adapter = PhaseExecutorAdapter(llm_client=AnthropicClient(model=model))
         async with eval_session() as eval_db:
             eval_repo = EvalRepository(eval_db)
 
@@ -165,9 +185,9 @@ async def run_evaluation(dataset_path: str, name: str, model: str, dry_run: bool
             evaluation_run_id = await eval_repo.create_evaluation_run(
                 {
                     "name": name,
-                    "dataset_path": dataset_path,
-                    "model": model,
-                    "created_at": datetime.utcnow(),
+                    "dataset_name": dataset_path,
+                    "model_label": model,
+                    "started_at": datetime.now(timezone.utc),
                 }
             )
             print(f"evaluation_run_id: {evaluation_run_id}\n")
@@ -181,9 +201,11 @@ async def run_evaluation(dataset_path: str, name: str, model: str, dry_run: bool
                     continue
                 results.append(result)
                 print(f"predicted={result['predicted_label']}  score={result['risk_score']:.2f}")
-                await eval_repo.save_investigation_result(
+                await eval_repo.insert_investigation_result(
                     {**result, "evaluation_run_id": evaluation_run_id}
                 )
+
+            await eval_repo.mark_evaluation_run_complete(evaluation_run_id)
 
     # -----------------------------------------------------------------------
     # Summary metrics
@@ -191,12 +213,11 @@ async def run_evaluation(dataset_path: str, name: str, model: str, dry_run: bool
     pairs = [(r["actual_label"], r["predicted_label"]) for r in results]
     accuracy = compute_accuracy(pairs)
 
-    print("\n" + "=" * 60)
+    print()
+    print("=" * 60)
     print(f"Evaluation: {name}")
-    print(f"Model:      {model}")
     print(f"Samples:    {len(results)}")
     print(f"Accuracy:   {accuracy:.1%}")
-    print()
 
     for label in ("phishing", "impersonation", "benign"):
         stats = compute_label_stats(pairs, label)
@@ -206,7 +227,7 @@ async def run_evaluation(dataset_path: str, name: str, model: str, dry_run: bool
         )
 
     if dry_run:
-        print("\n[dry-run: results were not persisted]")
+        print("[dry-run] results were not persisted")
 
 
 # ---------------------------------------------------------------------------
@@ -216,7 +237,7 @@ async def run_evaluation(dataset_path: str, name: str, model: str, dry_run: bool
 def main() -> None:
     parser = argparse.ArgumentParser(description="security-ai-eval-lab evaluation runner")
     parser.add_argument("--dataset", default="datasets", help="Path to dataset directory")
-    parser.add_argument("--name", default=f"eval-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}", help="Evaluation run name")
+    parser.add_argument("--name", default=f"eval-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}", help="Evaluation run name")
     parser.add_argument("--model", default="claude-haiku-4-5-20251001", help="Anthropic model ID")
     parser.add_argument("--dry-run", action="store_true", help="Skip DB writes")
     args = parser.parse_args()
