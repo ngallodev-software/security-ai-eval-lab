@@ -78,11 +78,11 @@ Keep this table updated in this file as tasks progress.
 
 | task_id | branch | worktree | agent_id | status | tokens_used | elapsed_seconds | errors_encountered | tests_run | changed_files |
 |---|---|---|---|---|---:|---:|---|---|---|
-| t02 | task/t02-eval-persistence | /tmp/codex-worktrees/security-ai-eval-lab/t02-eval-persistence | pending | pending | 0 | 0 | none | none | none |
-| t03 | task/t03-reliability-adapter | /tmp/codex-worktrees/security-ai-eval-lab/t03-reliability-adapter | pending | pending | 0 | 0 | none | none | none |
-| t04 | task/t04-runner-integration | /tmp/codex-worktrees/security-ai-eval-lab/t04-runner-integration | pending | pending | 0 | 0 | none | none | none |
-| t05 | task/t05-docs-boundary | /tmp/codex-worktrees/security-ai-eval-lab/t05-docs-boundary | pending | pending | 0 | 0 | none | none | none |
-| t06 | task/t06-verification | /tmp/codex-worktrees/security-ai-eval-lab/t06-verification | pending | pending | 0 | 0 | none | none | none |
+| t02 | task/t02-eval-persistence | /tmp/codex-worktrees/security-ai-eval-lab/t02-eval-persistence | 019cfe44-769e-7bf0-909c-412c6b00d333 | completed | 8500 | 240 | python missing on PATH (used python3 instead) | python3 -m py_compile db/models.py db/repository.py migrations/versions/0001_eval_lab_tables.py; python3 contract-check script for ORM columns/repository methods | db/models.py, db/repository.py, migrations/versions/0001_eval_lab_tables.py |
+| t03 | task/t03-reliability-adapter | /tmp/codex-worktrees/security-ai-eval-lab/t03-reliability-adapter | 019cfe44-76b9-7581-b114-cc56e21805b1 | completed | 6200 | 9 | python not found in PATH; rm blocked by policy; initial smoke test rerun with python3 and PYTHONPATH | python3 -m py_compile agents/reliability_adapter.py; PYTHONPATH=/lump/apps/ai-reliability-fw python3 - <<'PY' smoke test for deterministic serialization and normalized payload | agents/reliability_adapter.py |
+| t04 | task/t04-runner-integration | /tmp/codex-worktrees/security-ai-eval-lab/t04-runner-integration | 019cfe47-9c02-70d0-887c-a6c7251d59fb | completed | 7200 | 900 | none | python3 -m evaluation.runner --dataset datasets --dry-run; git diff --check | agents/email_threat_agent.py, evaluation/runner.py |
+| t05 | task/t05-docs-boundary | /tmp/codex-worktrees/security-ai-eval-lab/t05-docs-boundary | 019cfe44-76d1-7d23-8b28-9c758a1fc82f | completed | 8200 | 540 | initial `python3 -m evaluation.runner --help` failed until `PYTHONPATH=/lump/apps/ai-reliability-fw` was added | `PYTHONPATH=/lump/apps/ai-reliability-fw python3 -m evaluation.runner --help`; `git diff --check` | /tmp/codex-worktrees/security-ai-eval-lab/t05-docs-boundary/README.md, /tmp/codex-worktrees/security-ai-eval-lab/t05-docs-boundary/docs/integration_boundary.md |
+| t06 | task/t06-verification | /tmp/codex-worktrees/security-ai-eval-lab/t06-verification | 019cfe4a-fdbe-7811-9a8e-53ee4645f1ae | completed | 5200 | 600 | none | python3 -m evaluation.runner --dataset datasets --dry-run | none |
 
 Update rules:
 - Set status to `running` when an agent starts.

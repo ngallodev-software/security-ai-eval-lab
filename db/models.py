@@ -6,7 +6,7 @@ and are referenced here only by UUID columns where needed.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy import Column, DateTime, Float, ForeignKey, String, Text
@@ -27,7 +27,7 @@ class EvaluationRun(Base):
     model_label = Column(String(128), nullable=True)
     prompt_version = Column(String(128), nullable=True)
     status = Column(String(32), nullable=False)
-    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    started_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     completed_at = Column(DateTime, nullable=True)
 
     # Backward-compatible aliases for the current runner task.
@@ -64,6 +64,6 @@ class InvestigationResult(Base):
     reliability_prompt_id = Column(UUID(as_uuid=True), nullable=False)
     reliability_call_id = Column(UUID(as_uuid=True), nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     result_id = synonym("id")
