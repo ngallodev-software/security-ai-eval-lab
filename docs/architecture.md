@@ -1,0 +1,6 @@
+- A labeled email sample enters the investigation agent.
+- The agent extracts deterministic security signals first.
+- Those signals are assembled into a structured evidence bundle.
+- The evidence bundle is sent through the reliability framework for validated LLM reasoning.
+- The system returns a structured investigation result with label, score, explanation, and audit trail.
+- The evaluation runner compares predictions to ground truth and generates metrics and reports.

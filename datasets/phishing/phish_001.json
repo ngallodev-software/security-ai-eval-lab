@@ -1,0 +1,9 @@
+{
+  "id": "phish_001",
+  "label": "phishing",
+  "email_text": "From: Microsoft Account Team <security@micr0soft-login-support.com>\nSubject: Unusual sign-in activity detected\n\nWe detected unusual activity on your Microsoft account. Please verify your identity immediately:\nhttps://micr0soft-login-support.com/verify",
+  "metadata": {
+    "source_type": "synthetic",
+    "scenario": "credential harvest"
+  }
+}

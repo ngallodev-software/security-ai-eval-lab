@@ -1,0 +1,9 @@
+{
+  "id": "phish_002",
+  "label": "phishing",
+  "email_text": "From: Payroll Dept <payroll@secure-payroll-review.com>\nSubject: Action required\n\nConfirm payroll credentials:\nhttps://secure-payroll-review.com/login",
+  "metadata": {
+    "source_type": "synthetic",
+    "scenario": "credential harvest"
+  }
+}

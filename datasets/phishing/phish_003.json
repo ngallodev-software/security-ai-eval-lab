@@ -1,0 +1,9 @@
+{
+  "id": "phish_003",
+  "label": "phishing",
+  "email_text": "From: DocuSign Notifications <documents@docusign-review.net>\nSubject: Document awaiting signature\n\nReview and sign:\nhttps://docusign-review.net/open",
+  "metadata": {
+    "source_type": "synthetic",
+    "scenario": "fake document delivery"
+  }
+}

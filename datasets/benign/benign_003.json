@@ -1,0 +1,9 @@
+{
+  "id": "benign_003",
+  "label": "benign",
+  "email_text": "From: Zoom <no-reply@zoom.us>\nSubject: Meeting reminder\n\nReminder for tomorrow.",
+  "metadata": {
+    "source_type": "synthetic",
+    "scenario": "calendar reminder"
+  }
+}

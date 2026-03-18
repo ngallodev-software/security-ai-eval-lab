@@ -1,0 +1,9 @@
+{
+  "id": "imp_001",
+  "label": "impersonation",
+  "email_text": "From: Nathan Gallo <n.gallo.executive.consulting@gmail.com>\nSubject: Quick favor\n\nReply with your phone number.",
+  "metadata": {
+    "source_type": "synthetic",
+    "scenario": "executive impersonation"
+  }
+}
