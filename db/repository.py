@@ -1,0 +1,102 @@
+"""
+Eval-lab persistence layer.
+
+Stores evaluation_runs and investigation_results.
+Reliability-layer data (llm_calls, workflow_runs, etc.) is
+persisted by ai-reliability-fw — not duplicated here.
+"""
+from __future__ import annotations
+
+import uuid
+from datetime import datetime
+from typing import Any, Mapping
+
+from sqlalchemy import select, update
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from db.models import EvaluationRun, InvestigationResult
+
+
+class EvalRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    def _normalize_evaluation_run_data(self, data: Mapping[str, Any]) -> dict[str, Any]:
+        record = {
+            "name": data["name"],
+            "dataset_name": data.get("dataset_name") or data.get("dataset_path"),
+            "model_label": data.get("model_label") or data.get("model"),
+            "prompt_version": data.get("prompt_version"),
+            "status": data.get("status") or "running",
+            "started_at": data.get("started_at") or data.get("created_at") or datetime.utcnow(),
+            "completed_at": data.get("completed_at"),
+        }
+        run_id = data.get("id") or data.get("evaluation_run_id")
+        record["id"] = run_id or uuid.uuid4()
+        return record
+
+    def _normalize_investigation_result_data(self, data: Mapping[str, Any]) -> dict[str, Any]:
+        record = {
+            "evaluation_run_id": data["evaluation_run_id"],
+            "sample_id": data["sample_id"],
+            "actual_label": data["actual_label"],
+            "predicted_label": data["predicted_label"],
+            "risk_score": data["risk_score"],
+            "confidence": data["confidence"],
+            "explanation": data.get("explanation"),
+            "signals_json": data["signals_json"],
+            "timeline_json": data["timeline_json"],
+            "reliability_run_id": data["reliability_run_id"],
+            "reliability_phase_id": data["reliability_phase_id"],
+            "reliability_prompt_id": data["reliability_prompt_id"],
+            "reliability_call_id": data.get("reliability_call_id"),
+            "created_at": data.get("created_at") or datetime.utcnow(),
+        }
+        result_id = data.get("id") or data.get("result_id")
+        record["id"] = result_id or uuid.uuid4()
+        return record
+
+    async def create_evaluation_run(self, data: Mapping[str, Any]) -> uuid.UUID:
+        record = self._normalize_evaluation_run_data(data)
+        stmt = insert(EvaluationRun).values(**record).returning(EvaluationRun.id)
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.scalar_one()
+
+    async def mark_evaluation_run_complete(
+        self,
+        evaluation_run_id: uuid.UUID,
+        completed_at: datetime | None = None,
+        status: str = "completed",
+    ) -> uuid.UUID:
+        stmt = (
+            update(EvaluationRun)
+            .where(EvaluationRun.id == evaluation_run_id)
+            .values(status=status, completed_at=completed_at or datetime.utcnow())
+            .returning(EvaluationRun.id)
+        )
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.scalar_one()
+
+    async def insert_investigation_result(self, data: Mapping[str, Any]) -> uuid.UUID:
+        record = self._normalize_investigation_result_data(data)
+        stmt = insert(InvestigationResult).values(**record).returning(InvestigationResult.id)
+        result = await self.session.execute(stmt)
+        await self.session.commit()
+        return result.scalar_one()
+
+    async def list_investigation_results_by_evaluation_run_id(
+        self, evaluation_run_id: uuid.UUID
+    ) -> list[InvestigationResult]:
+        result = await self.session.execute(
+            select(InvestigationResult)
+            .where(InvestigationResult.evaluation_run_id == evaluation_run_id)
+            .order_by(InvestigationResult.created_at, InvestigationResult.id)
+        )
+        return list(result.scalars().all())
+
+    # Backward-compatible aliases for the current runner task.
+    save_investigation_result = insert_investigation_result
+    get_results_for_run = list_investigation_results_by_evaluation_run_id

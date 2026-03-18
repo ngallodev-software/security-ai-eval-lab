@@ -1,0 +1,9 @@
+{
+  "id": "benign_002",
+  "label": "benign",
+  "email_text": "From: HR Team <hr@company.com>\nSubject: Holiday calendar\n\nSee the updated calendar.",
+  "metadata": {
+    "source_type": "synthetic",
+    "scenario": "internal informational"
+  }
+}

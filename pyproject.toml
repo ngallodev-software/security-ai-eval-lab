@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "security-ai-eval-lab"
+version = "0.1.0"
+description = "Evaluation lab for LLM-assisted security investigation tasks."
+requires-python = ">=3.11"
+dependencies = [
+    "ai-reliability-fw @ file:///lump/apps/ai-reliability-fw",
+    "alembic==1.18.4",
+    "anthropic>=0.40.0",
+    "asyncpg==0.30.0",
+    "jsonschema==4.26.0",
+    "python-dotenv==1.2.2",
+    "SQLAlchemy==2.0.48",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agents*", "db*", "evaluation*", "signals*"]
+namespaces = true
