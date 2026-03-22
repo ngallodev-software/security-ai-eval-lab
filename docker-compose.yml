@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:15
+    container_name: eval_lab_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Run with: docker compose --profile migrate up migrate
+  # Applies security-ai-eval-lab migrations (security_eval schema).
+  # NOTE: ai-reliability-fw migrations (reliability schema) must be run
+  # separately from the ai-reliability-fw project before running this.
+  migrate:
+    build:
+      context: /lump/apps
+      dockerfile: security-ai-eval-lab/Dockerfile
+      args:
+        REGISTRY_TOKEN: ${REGISTRY_TOKEN}
+    container_name: eval_lab_migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    command: alembic upgrade head
+    profiles:
+      - migrate
+
+  eval-lab:
+    build:
+      context: /lump/apps
+      dockerfile: security-ai-eval-lab/Dockerfile
+      args:
+        REGISTRY_TOKEN: ${REGISTRY_TOKEN}
+    container_name: eval_lab_runner
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    volumes:
+      - ./datasets:/app/datasets:ro
+      - ./outputs:/app/outputs
+
+volumes:
+  postgres_data:

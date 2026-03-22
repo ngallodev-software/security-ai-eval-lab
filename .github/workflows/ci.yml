@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: ["master", "main"]
+  pull_request:
+    branches: ["master", "main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      # No DB needed for the dry-run path.
+      DATABASE_URL: postgresql+asyncpg://user:pass@localhost:5432/unused
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ai-reliability-fw from GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pip install --extra-index-url "https://__token__:${GITHUB_TOKEN}@pypi.pkg.github.com/ngallodev-software/" ai-reliability-fw==0.1.0
+
+      - name: Install eval-lab
+        run: pip install -e .
+
+      - name: Quickstart smoke test (no DB, no API key)
+        run: python3 -m examples.run_eval
+
+      - name: Dry-run evaluation
+        run: python3 -m evaluation.runner --dataset datasets/ --name ci-test --dry-run

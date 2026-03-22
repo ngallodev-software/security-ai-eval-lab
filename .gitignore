@@ -18,6 +18,10 @@ env/
 # Environment
 .env
 .env.*
+!.env.sample
+
+# Evaluation outputs
+outputs/
 
 # Tool artifacts
 .dev-report-cache.md

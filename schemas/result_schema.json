@@ -1,0 +1,16 @@
+{
+  "sample_id": "sample_001",
+  "predicted_label": "phishing",
+  "risk_score": 0.91,
+  "confidence": 0.88,
+  "signals": {
+    "sender_domain": "example.com",
+    "domain_age_days": 4
+  },
+  "timeline": [
+    "parse headers",
+    "domain lookup",
+    "brand similarity",
+    "llm classification"
+  ]
+}

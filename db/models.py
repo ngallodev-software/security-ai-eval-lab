@@ -20,6 +20,7 @@ class Base(DeclarativeBase):
 
 class EvaluationRun(Base):
     __tablename__ = "evaluation_runs"
+    __table_args__ = {"schema": "security_eval"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String(255), nullable=False)
@@ -39,11 +40,12 @@ class EvaluationRun(Base):
 
 class InvestigationResult(Base):
     __tablename__ = "investigation_results"
+    __table_args__ = {"schema": "security_eval"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     evaluation_run_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("evaluation_runs.id"),
+        ForeignKey("security_eval.evaluation_runs.id"),
         nullable=False,
     )
     sample_id = Column(String(128), nullable=False)

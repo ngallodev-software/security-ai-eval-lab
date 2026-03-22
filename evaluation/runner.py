@@ -28,6 +28,7 @@ from agents.email_threat_agent import FakeReliabilityExecutor
 from db.repository import EvalRepository
 from db.session import async_session as eval_session
 from evaluation.metrics import compute_accuracy, compute_label_stats
+from evaluation.report import write_json_report, write_markdown_report
 
 
 # ---------------------------------------------------------------------------
@@ -175,9 +176,9 @@ async def run_evaluation(dataset_path: str, name: str, model: str, dry_run: bool
     else:
         _ensure_reliability_fw_on_path()
         from agents.reliability_adapter import PhaseExecutorAdapter
-        from llm.anthropic_client import AnthropicClient
+        from llm.openai_client import OpenAIClient
 
-        adapter = PhaseExecutorAdapter(llm_client=AnthropicClient(model=model))
+        adapter = PhaseExecutorAdapter(llm_client=OpenAIClient(model=model))
         async with eval_session() as eval_db:
             eval_repo = EvalRepository(eval_db)
 
@@ -219,8 +220,11 @@ async def run_evaluation(dataset_path: str, name: str, model: str, dry_run: bool
     print(f"Samples:    {len(results)}")
     print(f"Accuracy:   {accuracy:.1%}")
 
-    for label in ("phishing", "impersonation", "benign"):
-        stats = compute_label_stats(pairs, label)
+    label_stats = {
+        label: compute_label_stats(pairs, label)
+        for label in ("phishing", "impersonation", "benign")
+    }
+    for label, stats in label_stats.items():
         print(
             f"  {label:<14}  P={stats['precision']:.2f}  R={stats['recall']:.2f}"
             f"  F1={stats['f1']:.2f}  (tp={stats['tp']} fp={stats['fp']} fn={stats['fn']})"
@@ -228,6 +232,12 @@ async def run_evaluation(dataset_path: str, name: str, model: str, dry_run: bool
 
     if dry_run:
         print("[dry-run] results were not persisted")
+    else:
+        json_path = write_json_report(results, accuracy, label_stats, name, model)
+        md_path = write_markdown_report(results, accuracy, label_stats, name, model)
+        print(f"\nReports written:")
+        print(f"  {json_path}")
+        print(f"  {md_path}")
 
 
 # ---------------------------------------------------------------------------
@@ -238,7 +248,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="security-ai-eval-lab evaluation runner")
     parser.add_argument("--dataset", default="datasets", help="Path to dataset directory")
     parser.add_argument("--name", default=f"eval-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}", help="Evaluation run name")
-    parser.add_argument("--model", default="claude-haiku-4-5-20251001", help="Anthropic model ID")
+    parser.add_argument("--model", default="gpt-4o-mini", help="OpenAI model ID")
     parser.add_argument("--dry-run", action="store_true", help="Skip DB writes")
     args = parser.parse_args()
 
