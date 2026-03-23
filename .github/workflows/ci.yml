@@ -23,7 +23,7 @@ jobs:
       - name: Install ai-reliability-fw from GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pip install "https://${GITHUB_TOKEN}@github.com/ngallodev-software/ai-reliability-fw/releases/download/v0.1.0/ai_reliability_fw-0.1.0-py3-none-any.whl"
+        run: pip install "https://${GITHUB_TOKEN}@github.com/ngallodev-software/ai-reliability-fw/releases/download/v0.2.0/ai_reliability_fw-0.2.0-py3-none-any.whl"
 
       - name: Install eval-lab
         run: pip install -e .

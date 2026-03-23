@@ -24,7 +24,7 @@ import uuid
 from typing import Any, Dict
 
 from src.db.repository import ReliabilityRepository
-from src.db.session import get_db as reliability_get_db
+from src.db.session import get_db as reliability_get_db, init_reliability
 from src.engine.decision_engine import RetryPolicy, RetryRule
 from src.engine.phase_executor import PhaseExecutor
 from src.core.models import FailureCategory
@@ -32,6 +32,12 @@ from src.validators.input_schema_validator import InputIntegrityValidator
 from src.validators.json_schema_validator import JsonSchemaValidator
 
 from agents.email_threat_agent import ReliabilityExecutorProtocol
+from db.session import DATABASE_URL as _DATABASE_URL
+
+# Initialize the reliability-fw with the host app's connection string.
+# Called at module load time — safe because DATABASE_URL is already validated
+# by db/session.py when that module is imported.
+init_reliability(_DATABASE_URL)
 
 # -----------------------------------------------------------------------
 # Static UUIDs for the single workflow used by this lab.
