@@ -46,9 +46,14 @@ def run_migrations_online() -> None:
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
+
+    # Commit schema creation before the migration transaction so Alembic can
+    # locate security_eval.alembic_version on a fresh database.
     with connectable.connect() as connection:
         connection.execute(text("CREATE SCHEMA IF NOT EXISTS security_eval"))
-        connection.execute(text("SET search_path TO security_eval, public"))
+        connection.commit()
+
+    with connectable.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
