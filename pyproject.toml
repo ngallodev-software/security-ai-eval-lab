@@ -8,8 +8,9 @@ version = "0.1.0"
 description = "Evaluation lab for LLM-assisted security investigation tasks."
 requires-python = ">=3.11"
 dependencies = [
-    # Pulled from GitHub Packages. Install before `pip install -e .` with:
-    #   pip install --extra-index-url "https://__token__:${REGISTRY_TOKEN}@pypi.pkg.github.com/ngallodev-software/" ai-reliability-fw==0.1.0
+    # Installed from GitHub Release asset. Run before `pip install -e .`:
+    #   pip install "https://${REGISTRY_TOKEN}@github.com/ngallodev-software/ai-reliability-fw/releases/download/v0.1.0/ai_reliability_fw-0.1.0-py3-none-any.whl"
+    # REGISTRY_TOKEN: GitHub PAT with repo scope.
     "ai-reliability-fw==0.1.0",
     "alembic==1.18.4",
     "openai>=1.0.0",
