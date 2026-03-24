@@ -21,7 +21,9 @@ env/
 !.env.sample
 
 # Evaluation outputs
-outputs/
+outputs/*.json
+outputs/*.md
+
 
 # Tool artifacts
 .dev-report-cache.md
@@ -31,3 +33,11 @@ outputs/
 .vscode/
 *.swp
 *.swo
+
+# analysis docs
+docs/analysis*
+docs/mvp-status*
+impl-prompts/
+
+*/*.pyc
+*/*__pycache__/

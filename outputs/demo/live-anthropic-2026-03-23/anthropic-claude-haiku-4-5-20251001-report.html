@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Evaluation Report: live-anthropic-2026-03-23</title>
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --card: #ffffff;
+      --text: #1f2328;
+      --muted: #5a6570;
+      --border: #e1e4e8;
+      --accent: #2f5fa8;
+      --success: #1f7a1f;
+      --warning: #b06a00;
+      --danger: #b32020;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .container { max-width: 1100px; margin: 32px auto; padding: 0 24px 40px; }
+    header { background: var(--card); padding: 24px; border-radius: 12px; border: 1px solid var(--border); }
+    h1 { margin: 0 0 8px 0; font-size: 28px; }
+    h2 { margin: 28px 0 12px; font-size: 20px; }
+    h3 { margin: 20px 0 10px; font-size: 16px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: 14px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 16px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+    .card .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .card .value { font-size: 18px; font-weight: 600; margin-top: 6px; }
+    table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; font-size: 14px; }
+    th { background: #f1f3f5; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    .section { margin-top: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #eef2f6; color: var(--muted); }
+    .match-yes { color: var(--success); font-weight: 600; }
+    .match-no { color: var(--danger); font-weight: 600; }
+    .status-unsupported { color: var(--danger); font-weight: 600; }
+    .status-weak { color: var(--warning); font-weight: 600; }
+    .row-unsupported { background: #fff5f5; }
+    .row-unsupported td { border-bottom-color: #f0d7d7; }
+    .sample-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+    .sample-unsupported { border-color: #f0d7d7; background: #fffaf9; }
+    .sample-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 16px; font-size: 13px; color: var(--muted); }
+    .sample-grid strong { color: var(--text); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Evaluation Report: live-anthropic-2026-03-23</h1>
+      <div class="meta">
+        <div><strong>Model:</strong> anthropic:claude-haiku-4-5-20251001</div>
+        <div><strong>Generated:</strong> 2026-03-24 05:24 UTC</div>
+        <div><strong>Samples:</strong> 10</div>
+        <div><strong>Accuracy:</strong> 80.0%</div>
+      </div>
+      <div class="cards">
+        <div class="card"><div class="label">Accuracy</div><div class="value">80.0%</div></div>
+        <div class="card"><div class="label">Samples</div><div class="value">10</div></div>
+        <div class="card"><div class="label">LLM Calls</div><div class="value">10</div></div>
+        <div class="card"><div class="label">Retries</div><div class="value">0</div></div>
+        <div class="card"><div class="label">Total Tokens</div><div class="value">4019</div></div>
+        <div class="card"><div class="label">Total Cost (USD)</div><div class="value">0.007266</div></div>
+        <div class="card"><div class="label">Total Latency (ms)</div><div class="value">15992.0</div></div>
+        <div class="card"><div class="label">Avg Latency (ms)</div><div class="value">1599.2</div></div>
+      </div>
+    </header>
+    <section class="section">
+      <h2>Classification Metrics</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Label</th>
+            <th>Support</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1</th>
+            <th>TP</th>
+            <th>FP</th>
+            <th>FN</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>benign</td><td>4</td><td>1.00</td><td>1.00</td><td>1.00</td><td>4</td><td>0</td><td>0</td></tr>
+          <tr><td>phishing</td><td>4</td><td>0.67</td><td>1.00</td><td>0.80</td><td>4</td><td>2</td><td>0</td></tr>
+          <tr><td>impersonation</td><td>2</td><td>0.00</td><td>0.00</td><td>0.00</td><td>0</td><td>0</td><td>2</td></tr>
+        </tbody>
+      </table>
+      <div class="grid" style="margin-top: 12px;">
+        <div class="card"><div class="label">Macro Avg</div><div class="value">P=0.56 R=0.67 F1=0.60</div></div>
+        <div class="card"><div class="label">Micro Avg</div><div class="value">P=0.80 R=0.80 F1=0.80</div></div>
+        <div class="card"><div class="label">Weighted Avg</div><div class="value">P=0.67 R=0.80 F1=0.72</div></div>
+        <div class="card"><div class="label">Total Support</div><div class="value">10</div></div>
+      </div>
+    </section>
+    <section class="section">
+      <h2>LLM Metadata</h2>
+      <div class="grid">
+        <div class="card"><div class="label">Providers</div><div class="value">anthropic (10)</div></div>
+        <div class="card"><div class="label">Models</div><div class="value">claude-haiku-4-5-20251001 (10)</div></div>
+        <div class="card"><div class="label">LLM Calls</div><div class="value">10</div></div>
+        <div class="card"><div class="label">Retries</div><div class="value">0</div></div>
+        <div class="card"><div class="label">Input Tokens</div><div class="value">2753</div></div>
+        <div class="card"><div class="label">Output Tokens</div><div class="value">1266</div></div>
+        <div class="card"><div class="label">Total Tokens</div><div class="value">4019</div></div>
+        <div class="card"><div class="label">Total Cost (USD)</div><div class="value">0.007266</div></div>
+        <div class="card"><div class="label">Total Latency (ms)</div><div class="value">15992.0</div></div>
+        <div class="card"><div class="label">Avg Latency (ms)</div><div class="value">1599.2</div></div>
+      </div>
+    </section>
+    <section class="section">
+      <h2>Confusion Matrix</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Actual \ Predicted</th>
+            <th>benign</th>
+            <th>phishing</th>
+            <th>impersonation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>benign</strong></td>
+            <td>4</td>
+            <td>0</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td><strong>phishing</strong></td>
+            <td>0</td>
+            <td>4</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td><strong>impersonation</strong></td>
+            <td>0</td>
+            <td>2</td>
+            <td>0</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="section">
+      <h2>Explanation Support</h2>
+      <div class="grid">
+        <div class="card"><div class="label">Supported</div><div class="value">9</div></div>
+        <div class="card"><div class="label">Weak</div><div class="value">0</div></div>
+        <div class="card"><div class="label">Unsupported</div><div class="value">1</div></div>
+        <div class="card"><div class="label">Unavailable</div><div class="value">0</div></div>
+      </div>
+      <h3>Examples</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Sample</th>
+            <th>Actual</th>
+            <th>Predicted</th>
+            <th>Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-unsupported">
+            <td>imp_001</td>
+            <td>impersonation</td>
+            <td>phishing</td>
+            <td>unsupported</td>
+            <td>high-risk label with no supporting signals</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="section">
+      <h2>Results</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Sample</th>
+            <th>Actual</th>
+            <th>Predicted</th>
+            <th>Match</th>
+            <th>Risk</th>
+            <th>Confidence</th>
+            <th>Explanation Support</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="">
+            <td>benign_001</td>
+            <td>benign</td>
+            <td>benign</td>
+            <td class="match-yes">Yes</td>
+            <td>0.15</td>
+            <td>0.82</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="">
+            <td>benign_002</td>
+            <td>benign</td>
+            <td>benign</td>
+            <td class="match-yes">Yes</td>
+            <td>0.15</td>
+            <td>0.85</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="">
+            <td>benign_003</td>
+            <td>benign</td>
+            <td>benign</td>
+            <td class="match-yes">Yes</td>
+            <td>0.15</td>
+            <td>0.82</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="">
+            <td>benign_004</td>
+            <td>benign</td>
+            <td>benign</td>
+            <td class="match-yes">Yes</td>
+            <td>0.25</td>
+            <td>0.72</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="row-unsupported">
+            <td>imp_001</td>
+            <td>impersonation</td>
+            <td>phishing</td>
+            <td class="match-no">No</td>
+            <td>0.82</td>
+            <td>0.85</td>
+            <td class="status-unsupported">unsupported</td>
+          </tr>
+          <tr class="">
+            <td>imp_002</td>
+            <td>impersonation</td>
+            <td>phishing</td>
+            <td class="match-no">No</td>
+            <td>0.95</td>
+            <td>0.98</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="">
+            <td>phish_001</td>
+            <td>phishing</td>
+            <td>phishing</td>
+            <td class="match-yes">Yes</td>
+            <td>0.98</td>
+            <td>0.99</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="">
+            <td>phish_002</td>
+            <td>phishing</td>
+            <td>phishing</td>
+            <td class="match-yes">Yes</td>
+            <td>0.95</td>
+            <td>0.92</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="">
+            <td>phish_003</td>
+            <td>phishing</td>
+            <td>phishing</td>
+            <td class="match-yes">Yes</td>
+            <td>0.95</td>
+            <td>0.98</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="">
+            <td>phish_004</td>
+            <td>phishing</td>
+            <td>phishing</td>
+            <td class="match-yes">Yes</td>
+            <td>0.92</td>
+            <td>0.95</td>
+            <td class="">supported</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="section">
+      <h2>Per-Sample Execution Details</h2>
+      <div class="sample-card">
+        <h3>benign_001</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> anthropic</div>
+          <div><strong>Model:</strong> claude-haiku-4-5-20251001</div>
+          <div><strong>Latency (ms):</strong> 1481</div>
+          <div><strong>Input tokens:</strong> 257</div>
+          <div><strong>Output tokens:</strong> 111</div>
+          <div><strong>Token cost (USD):</strong> 0.0006496</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> explanation references links but no urls were extracted</div>
+          <div><strong>Reliability run id:</strong> c6097648-2617-48c9-a1b4-a1f010a87cd4</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> 0795d244-a602-517d-ae1d-ec4be311de04</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>benign_002</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> anthropic</div>
+          <div><strong>Model:</strong> claude-haiku-4-5-20251001</div>
+          <div><strong>Latency (ms):</strong> 1733</div>
+          <div><strong>Input tokens:</strong> 252</div>
+          <div><strong>Output tokens:</strong> 112</div>
+          <div><strong>Token cost (USD):</strong> 0.0006496</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> explanation references links but no urls were extracted</div>
+          <div><strong>Reliability run id:</strong> 4258df70-379b-488a-8b18-2cbe6d1552de</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> b149f2c4-09c9-5215-970c-1d91ebd27ee0</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>benign_003</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> anthropic</div>
+          <div><strong>Model:</strong> claude-haiku-4-5-20251001</div>
+          <div><strong>Latency (ms):</strong> 1310</div>
+          <div><strong>Input tokens:</strong> 256</div>
+          <div><strong>Output tokens:</strong> 113</div>
+          <div><strong>Token cost (USD):</strong> 0.0006568</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> explanation references links but no urls were extracted</div>
+          <div><strong>Reliability run id:</strong> 3870087e-a993-4fd4-a3b1-3916842b468e</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> 6841684b-0d7a-5f0d-9ed8-c9d565ec24aa</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>benign_004</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> anthropic</div>
+          <div><strong>Model:</strong> claude-haiku-4-5-20251001</div>
+          <div><strong>Latency (ms):</strong> 1217</div>
+          <div><strong>Input tokens:</strong> 264</div>
+          <div><strong>Output tokens:</strong> 100</div>
+          <div><strong>Token cost (USD):</strong> 0.0006112</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> explanation references links but no urls were extracted</div>
+          <div><strong>Reliability run id:</strong> ea83bcb3-49cc-4c96-ad66-aa74014e117d</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> 9a29d096-1751-5ab6-bead-0568091f26f8</div>
+        </div>
+      </div>
+      <div class="sample-card sample-unsupported">
+        <h3>imp_001</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> anthropic</div>
+          <div><strong>Model:</strong> claude-haiku-4-5-20251001</div>
+          <div><strong>Latency (ms):</strong> 1409</div>
+          <div><strong>Input tokens:</strong> 259</div>
+          <div><strong>Output tokens:</strong> 115</div>
+          <div><strong>Token cost (USD):</strong> 0.0006672</div>
+          <div><strong>Explanation support status:</strong> unsupported</div>
+          <div><strong>Explanation support notes:</strong> high-risk label with no supporting signals</div>
+          <div><strong>Reliability run id:</strong> 4640393f-2637-4d6e-8b71-303949bf4ce8</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> 3ae1f5a4-1211-55ec-a872-407ea087b61c</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>imp_002</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> anthropic</div>
+          <div><strong>Model:</strong> claude-haiku-4-5-20251001</div>
+          <div><strong>Latency (ms):</strong> 2192</div>
+          <div><strong>Input tokens:</strong> 269</div>
+          <div><strong>Output tokens:</strong> 157</div>
+          <div><strong>Token cost (USD):</strong> 0.0008432</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> N/A</div>
+          <div><strong>Reliability run id:</strong> da9653c3-433a-41f6-96f8-ce33cf100c23</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> 954584f1-8175-523b-bc8f-634c35872cea</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>phish_001</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> anthropic</div>
+          <div><strong>Model:</strong> claude-haiku-4-5-20251001</div>
+          <div><strong>Latency (ms):</strong> 1769</div>
+          <div><strong>Input tokens:</strong> 315</div>
+          <div><strong>Output tokens:</strong> 152</div>
+          <div><strong>Token cost (USD):</strong> 0.00086</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> N/A</div>
+          <div><strong>Reliability run id:</strong> 3b3c5603-8e95-4ee4-9236-7bb3ccd262a8</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> 4fd0f460-51ee-5d32-9c04-c2bd7edf01da</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>phish_002</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> anthropic</div>
+          <div><strong>Model:</strong> claude-haiku-4-5-20251001</div>
+          <div><strong>Latency (ms):</strong> 1319</div>
+          <div><strong>Input tokens:</strong> 294</div>
+          <div><strong>Output tokens:</strong> 118</div>
+          <div><strong>Token cost (USD):</strong> 0.0007072</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> N/A</div>
+          <div><strong>Reliability run id:</strong> 7c58dc8c-3709-4fc0-87d4-ac027d7a1f20</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> 3f74aec5-9895-51dd-bafa-52762f4e1a99</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>phish_003</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> anthropic</div>
+          <div><strong>Model:</strong> claude-haiku-4-5-20251001</div>
+          <div><strong>Latency (ms):</strong> 2017</div>
+          <div><strong>Input tokens:</strong> 293</div>
+          <div><strong>Output tokens:</strong> 154</div>
+          <div><strong>Token cost (USD):</strong> 0.0008504</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> N/A</div>
+          <div><strong>Reliability run id:</strong> 298e7478-fcff-47ad-8878-77ba29d4cbe8</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> d39288f3-c76c-5bc2-a91d-23f0a73f8864</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>phish_004</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> anthropic</div>
+          <div><strong>Model:</strong> claude-haiku-4-5-20251001</div>
+          <div><strong>Latency (ms):</strong> 1545</div>
+          <div><strong>Input tokens:</strong> 294</div>
+          <div><strong>Output tokens:</strong> 134</div>
+          <div><strong>Token cost (USD):</strong> 0.0007712</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> N/A</div>
+          <div><strong>Reliability run id:</strong> 3dbd3fb1-2873-48a7-bdad-898bd753ab06</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> 9db416b1-cc6d-5bec-8999-b6ffa55333fa</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

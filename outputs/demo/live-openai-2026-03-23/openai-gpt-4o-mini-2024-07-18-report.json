@@ -1,0 +1,361 @@
+{
+  "run_name": "live-openai-2026-03-23",
+  "model": "openai:gpt-4o-mini-2024-07-18",
+  "generated_at": "2026-03-24T05:25:11.259404+00:00",
+  "summary": {
+    "total_samples": 10,
+    "accuracy": 1.0,
+    "per_label": {
+      "phishing": {
+        "label": "phishing",
+        "tp": 4,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "impersonation": {
+        "label": "impersonation",
+        "tp": 2,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "benign": {
+        "label": "benign",
+        "tp": 4,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      }
+    },
+    "classification_metrics": {
+      "accuracy": 1.0,
+      "macro_precision": 1.0,
+      "macro_recall": 1.0,
+      "macro_f1": 1.0,
+      "micro_precision": 1.0,
+      "micro_recall": 1.0,
+      "micro_f1": 1.0,
+      "weighted_precision": 1.0,
+      "weighted_recall": 1.0,
+      "weighted_f1": 1.0,
+      "per_label": {
+        "benign": {
+          "support": 4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "phishing": {
+          "support": 4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "impersonation": {
+          "support": 2,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "labels": [
+        "benign",
+        "phishing",
+        "impersonation"
+      ],
+      "total_support": 10
+    },
+    "confusion_matrix": {
+      "labels": [
+        "benign",
+        "phishing",
+        "impersonation"
+      ],
+      "rows": {
+        "benign": {
+          "benign": 4,
+          "phishing": 0,
+          "impersonation": 0
+        },
+        "phishing": {
+          "benign": 0,
+          "phishing": 4,
+          "impersonation": 0
+        },
+        "impersonation": {
+          "benign": 0,
+          "phishing": 0,
+          "impersonation": 2
+        }
+      }
+    },
+    "explanation_support": {
+      "supported_count": 9,
+      "weak_count": 0,
+      "unsupported_count": 1,
+      "unavailable_count": 0,
+      "examples": [
+        {
+          "sample_id": "imp_001",
+          "actual_label": "impersonation",
+          "predicted_label": "impersonation",
+          "status": "unsupported",
+          "notes": [
+            "high-risk label with no supporting signals"
+          ]
+        }
+      ]
+    },
+    "llm": {
+      "providers": {
+        "openai": 10
+      },
+      "models": {
+        "gpt-4o-mini-2024-07-18": 10
+      },
+      "llm_call_count": 10,
+      "retry_count": 0,
+      "total_input_tokens": 2335,
+      "total_output_tokens": 855,
+      "total_tokens": 3190,
+      "total_cost_usd": 0.000863,
+      "total_latency_ms": 21222.0,
+      "avg_latency_ms": 2122.2
+    }
+  },
+  "results": [
+    {
+      "sample_id": "benign_001",
+      "actual_label": "benign",
+      "predicted_label": "benign",
+      "risk_score": 0.1,
+      "confidence": 0.9,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "b15832ef-4f5b-4850-9db1-d1bfae9fb87a",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "4d695639-e126-56d1-b80a-e11605878dec",
+      "provider": "openai",
+      "model": "gpt-4o-mini-2024-07-18",
+      "latency_ms": 2403,
+      "input_tokens": 223,
+      "output_tokens": 79,
+      "token_cost_usd": 8.085e-05,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": []
+    },
+    {
+      "sample_id": "benign_002",
+      "actual_label": "benign",
+      "predicted_label": "benign",
+      "risk_score": 0.1,
+      "confidence": 0.9,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "68bdb12e-f4d0-4118-aac7-fc7baad99d85",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "792907ed-6315-5f12-ac01-2576e20a233c",
+      "provider": "openai",
+      "model": "gpt-4o-mini-2024-07-18",
+      "latency_ms": 2132,
+      "input_tokens": 217,
+      "output_tokens": 75,
+      "token_cost_usd": 7.755e-05,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": [
+        "explanation references links but no urls were extracted"
+      ]
+    },
+    {
+      "sample_id": "benign_003",
+      "actual_label": "benign",
+      "predicted_label": "benign",
+      "risk_score": 0.1,
+      "confidence": 0.9,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "22771b0a-88bc-4e91-ba8e-d4e9cc072a0a",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "b4f4ca52-236a-5cf5-ae48-d802d07e4d16",
+      "provider": "openai",
+      "model": "gpt-4o-mini-2024-07-18",
+      "latency_ms": 2017,
+      "input_tokens": 218,
+      "output_tokens": 79,
+      "token_cost_usd": 8.01e-05,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": [
+        "explanation references links but no urls were extracted"
+      ]
+    },
+    {
+      "sample_id": "benign_004",
+      "actual_label": "benign",
+      "predicted_label": "benign",
+      "risk_score": 0.1,
+      "confidence": 0.85,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "cf55bff4-1c05-42fc-9c6c-26f22f5e77a6",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "4865a826-3722-52e0-a233-c952757f448e",
+      "provider": "openai",
+      "model": "gpt-4o-mini-2024-07-18",
+      "latency_ms": 2000,
+      "input_tokens": 227,
+      "output_tokens": 97,
+      "token_cost_usd": 9.225e-05,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": []
+    },
+    {
+      "sample_id": "imp_001",
+      "actual_label": "impersonation",
+      "predicted_label": "impersonation",
+      "risk_score": 0.85,
+      "confidence": 0.9,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "9d4dd443-2a64-4b29-974d-7c0a5fdf6c34",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "ccc30041-eff4-5ef7-b33e-f4a3bd2108a8",
+      "provider": "openai",
+      "model": "gpt-4o-mini-2024-07-18",
+      "latency_ms": 2280,
+      "input_tokens": 225,
+      "output_tokens": 80,
+      "token_cost_usd": 8.175e-05,
+      "explanation_support_status": "unsupported",
+      "explanation_support_notes": [
+        "high-risk label with no supporting signals"
+      ]
+    },
+    {
+      "sample_id": "imp_002",
+      "actual_label": "impersonation",
+      "predicted_label": "impersonation",
+      "risk_score": 0.85,
+      "confidence": 0.9,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "9a27af5a-9e98-4679-a170-fb3c9c04ee08",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "b655cdee-179f-534c-a162-b854de02ebad",
+      "provider": "openai",
+      "model": "gpt-4o-mini-2024-07-18",
+      "latency_ms": 1868,
+      "input_tokens": 226,
+      "output_tokens": 92,
+      "token_cost_usd": 8.91e-05,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": []
+    },
+    {
+      "sample_id": "phish_001",
+      "actual_label": "phishing",
+      "predicted_label": "phishing",
+      "risk_score": 0.95,
+      "confidence": 0.9,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "6c064d41-b98b-47d9-a7d7-8ed5aadaaeac",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "4518abc0-a53c-5374-b118-c2956375855d",
+      "provider": "openai",
+      "model": "gpt-4o-mini-2024-07-18",
+      "latency_ms": 2451,
+      "input_tokens": 268,
+      "output_tokens": 77,
+      "token_cost_usd": 8.64e-05,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": []
+    },
+    {
+      "sample_id": "phish_002",
+      "actual_label": "phishing",
+      "predicted_label": "phishing",
+      "risk_score": 0.85,
+      "confidence": 0.9,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "67502a52-10c4-4181-ae59-8f1c8bdc6e65",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "557ed160-4b45-5fef-88b8-01bd6895a449",
+      "provider": "openai",
+      "model": "gpt-4o-mini-2024-07-18",
+      "latency_ms": 2161,
+      "input_tokens": 242,
+      "output_tokens": 88,
+      "token_cost_usd": 8.91e-05,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": []
+    },
+    {
+      "sample_id": "phish_003",
+      "actual_label": "phishing",
+      "predicted_label": "phishing",
+      "risk_score": 0.9,
+      "confidence": 0.95,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "d42bd7b3-0dc5-436c-b7c8-29c8bffd0e60",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "b5a943ee-0d6d-5ef0-b3c2-30710a78ebdf",
+      "provider": "openai",
+      "model": "gpt-4o-mini-2024-07-18",
+      "latency_ms": 2051,
+      "input_tokens": 247,
+      "output_tokens": 103,
+      "token_cost_usd": 9.885e-05,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": []
+    },
+    {
+      "sample_id": "phish_004",
+      "actual_label": "phishing",
+      "predicted_label": "phishing",
+      "risk_score": 0.9,
+      "confidence": 0.95,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "468a8aee-e699-4b35-b6ef-78d0ecc6b3d1",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "f03da650-b25d-54b4-a09d-c2e845622949",
+      "provider": "openai",
+      "model": "gpt-4o-mini-2024-07-18",
+      "latency_ms": 1859,
+      "input_tokens": 242,
+      "output_tokens": 85,
+      "token_cost_usd": 8.73e-05,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": []
+    }
+  ]
+}

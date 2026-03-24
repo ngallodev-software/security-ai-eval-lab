@@ -28,8 +28,14 @@ from pathlib import Path
 from agents.email_threat_agent import FakeReliabilityExecutor
 from db.repository import EvalRepository
 from db.session import async_session as eval_session
-from evaluation.metrics import compute_accuracy, compute_label_stats
-from evaluation.report import write_json_report, write_markdown_report
+from evaluation.metrics import (
+    compute_accuracy,
+    compute_label_stats,
+    compute_classification_metrics,
+    compute_confusion_matrix,
+)
+from evaluation.report import write_json_report, write_markdown_report, write_html_report
+from evaluation.support_check import evaluate_explanation_support
 
 
 # ---------------------------------------------------------------------------
@@ -237,6 +243,39 @@ async def run_evaluation(dataset_path: str, name: str, model: str, provider: str
         label: compute_label_stats(pairs, label)
         for label in ("phishing", "impersonation", "benign")
     }
+    labels = ["benign", "phishing", "impersonation"]
+    classification_metrics = compute_classification_metrics(pairs, labels)
+    confusion_matrix = {
+        "labels": labels,
+        "rows": compute_confusion_matrix(pairs, labels),
+    }
+
+    support_counts = {
+        "supported_count": 0,
+        "weak_count": 0,
+        "unsupported_count": 0,
+        "unavailable_count": 0,
+    }
+    support_examples = []
+    for result in results:
+        status, notes = evaluate_explanation_support(result)
+        result["explanation_support_status"] = status
+        result["explanation_support_notes"] = notes
+        support_counts[f"{status}_count"] += 1
+        if status in ("weak", "unsupported") and len(support_examples) < 5:
+            support_examples.append(
+                {
+                    "sample_id": result.get("sample_id"),
+                    "actual_label": result.get("actual_label"),
+                    "predicted_label": result.get("predicted_label"),
+                    "status": status,
+                    "notes": notes,
+                }
+            )
+    explanation_support = {
+        **support_counts,
+        "examples": support_examples,
+    }
     for label, stats in label_stats.items():
         print(
             f"  {label:<14}  P={stats['precision']:.2f}  R={stats['recall']:.2f}"
@@ -246,11 +285,58 @@ async def run_evaluation(dataset_path: str, name: str, model: str, provider: str
     if dry_run:
         print("[dry-run] results were not persisted")
     else:
-        json_path = write_json_report(results, accuracy, label_stats, name, model)
-        md_path = write_markdown_report(results, accuracy, label_stats, name, model)
+        providers = {}
+        models = {}
+        for r in results:
+            provider = r.get("provider")
+            model_id = r.get("model")
+            if provider:
+                providers[provider] = providers.get(provider, 0) + 1
+            if model_id:
+                models[model_id] = models.get(model_id, 0) + 1
+
+        llm_summary = {"providers": providers, "models": models}
+        generated_at = datetime.now(timezone.utc).isoformat()
+        json_path = write_json_report(
+            results,
+            accuracy,
+            label_stats,
+            name,
+            model,
+            llm_summary=llm_summary,
+            classification_metrics=classification_metrics,
+            confusion_matrix=confusion_matrix,
+            explanation_support=explanation_support,
+            generated_at=generated_at,
+        )
+        md_path = write_markdown_report(
+            results,
+            accuracy,
+            label_stats,
+            name,
+            model,
+            llm_summary=llm_summary,
+            classification_metrics=classification_metrics,
+            confusion_matrix=confusion_matrix,
+            explanation_support=explanation_support,
+            generated_at=generated_at,
+        )
+        html_path = write_html_report(
+            results,
+            accuracy,
+            label_stats,
+            name,
+            model,
+            llm_summary=llm_summary,
+            classification_metrics=classification_metrics,
+            confusion_matrix=confusion_matrix,
+            explanation_support=explanation_support,
+            generated_at=generated_at,
+        )
         print(f"\nReports written:")
         print(f"  {json_path}")
         print(f"  {md_path}")
+        print(f"  {html_path}")
 
 
 # ---------------------------------------------------------------------------

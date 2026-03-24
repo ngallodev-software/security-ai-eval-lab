@@ -10,6 +10,7 @@ It combines:
 - validated LLM reasoning pipelines  
 - reproducible evaluation datasets  
 - measurable detection metrics  
+- demo-safe, DB-backed report exports  
 
 The goal is to evaluate how well different models perform on
 security tasks such as phishing and impersonation detection.
@@ -29,6 +30,7 @@ rule-based systems miss. Separating the two layers means:
 - The LLM prompt receives structured, validated input — not raw email text.
 - Output validation catches hallucinated labels before they reach callers.
 - Cost and latency are measured per call and stored for benchmarking.
+- DB-sourced reports aggregate tokens, cost, latency, and retry counts.
 
 ## Architecture diagram
 
@@ -71,7 +73,8 @@ flowchart TD
     H --> H1[evaluation_runs]
     H --> H2[investigation_results]
 
-    H2 --> I[Accuracy / Precision / Recall / F1]
+    H2 --> I[Accuracy / Precision / Recall / F1 + Confusion Matrix]
+    H2 --> J[Explanation Support Check]
 ```
 
 ## MVP capabilities
@@ -80,7 +83,9 @@ flowchart TD
 - Deterministic signal extraction: sender domain, URLs, auth results (SPF/DKIM/DMARC), domain age, brand similarity
 - LLM reasoning via ai-reliability-fw's `PhaseExecutor` over Anthropic API with input/output validation and retry logic
 - Reproducible evaluation runs with per-sample results stored in the eval-lab tables in Postgres
-- Accuracy, precision, recall, and F1 metrics printed after each run
+- Accuracy, precision, recall, F1, macro/micro/weighted averages, and confusion matrix
+- Explanation support check (rule-based, lightweight grounding audit)
+- DB-sourced report generation (JSON/Markdown) with demo-safe mode and golden snapshots
 - FakeReliabilityExecutor for local testing without a DB or API key
 
 ## Core components
@@ -92,7 +97,9 @@ flowchart TD
 | `AnthropicClient` | `llm/anthropic_client.py` | Anthropic Messages API client |
 | `EvalRepository` | `db/repository.py` | Persists `evaluation_runs` and `investigation_results` only |
 | Evaluation runner | `evaluation/runner.py` | Loads samples, extracts signals, calls the adapter, stores results, prints metrics |
-| Metrics | `evaluation/metrics.py` | Accuracy, precision, recall, F1 |
+| Metrics | `evaluation/metrics.py` | Accuracy, precision, recall, F1, macro/micro/weighted averages, confusion matrix |
+| Support check | `evaluation/support_check.py` | Rule-based explanation support status |
+| DB report | `evaluation/db_report.py` | DB-sourced JSON/Markdown reports + demo-safe snapshots |
 
 ## Dataset format
 
@@ -137,6 +144,12 @@ python3 -m evaluation.runner --dataset datasets/ --name my-run-001 --model claud
 
 # Dry-run (runs inference but skips DB writes)
 python3 -m evaluation.runner --dataset datasets/ --name test --dry-run
+
+# DB-sourced report (by run name)
+python3 -m evaluation.db_report --run-name my-run-001
+
+# Demo-safe golden snapshot export
+python3 -m evaluation.db_report --run-name my-run-001 --demo-safe --snapshot --generated-at 2026-03-23T00:00:00Z
 ```
 
 ## Example output
@@ -165,7 +178,8 @@ Accuracy:   90.0%
 - Input validation rejects prompt-injection patterns before the LLM is called.
 - Output is validated against a JSON schema; non-conforming responses trigger retries.
 - Safety flags escalate immediately without retry.
-- All reliability-layer calls are persisted with latency, cost, and retry count in `ai-reliability-fw`; eval-lab stores only the evaluation records and cross-reference UUIDs.
+- All reliability-layer calls are persisted with latency, cost, and retry count in `ai-reliability-fw`; eval-lab stores only evaluation records and cross-reference UUIDs.
+- Reports aggregate totals and surface explanation support status for auditability.
 - No live email scanning, no production mail infrastructure, no offensive tooling.
 
 ## Why this matters
@@ -208,5 +222,5 @@ Large-scale distributed system
 - Real domain age lookups (WHOIS / passive DNS)
 - SPF/DMARC DNS verification
 - Multi-model comparison runs (Haiku vs Sonnet vs Opus)
-- HTML report generation (`evaluation/report.py`)
+- Larger labeled dataset for more robust confusion matrix analysis
 - Expanded dataset (100+ labeled samples)

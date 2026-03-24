@@ -1,0 +1,40 @@
+flowchart TD
+    A[Labeled Email Sample\nphishing / impersonation / benign] --> B[EmailThreatInvestigationAgent]
+
+    B --> C[Deterministic Signal Extraction]
+    C --> C1[Sender Domain]
+    C --> C2[Auth Signals\nSPF / DKIM / DMARC]
+    C --> C3[Domain Age]
+    C --> C4[Brand Similarity]
+    C --> C5[URLs / IOC Extraction]
+
+    C1 --> D[Structured Evidence Bundle]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    C5 --> D
+
+    D --> E[ai-reliability-fw PhaseExecutor.execute()]
+    E --> E1[Input Validation]
+    E --> E2[LLM Call]
+    E --> E3[Output Validation]
+    E --> E4[Retry / Escalation Policy]
+    E --> E5[Call Audit / Cost / Latency]
+
+    E5 --> F[Investigation Result]
+    E4 --> F
+    E3 --> F
+
+    F --> F1[Predicted Label]
+    F --> F2[Risk Score]
+    F --> F3[Explanation]
+    F --> F4[Timeline / Audit Log]
+    F --> F5[Signal Snapshot]
+
+    F --> G[Evaluation Runner]
+    G --> G1[Accuracy]
+    G --> G2[Precision / Recall / F1]
+    G --> G3[False Positives / False Negatives]
+    G --> G4[Latency / Cost Comparison]
+
+    G --> H[Markdown / JSON Report]

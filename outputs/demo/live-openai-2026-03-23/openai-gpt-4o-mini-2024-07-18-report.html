@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Evaluation Report: live-openai-2026-03-23</title>
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --card: #ffffff;
+      --text: #1f2328;
+      --muted: #5a6570;
+      --border: #e1e4e8;
+      --accent: #2f5fa8;
+      --success: #1f7a1f;
+      --warning: #b06a00;
+      --danger: #b32020;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .container { max-width: 1100px; margin: 32px auto; padding: 0 24px 40px; }
+    header { background: var(--card); padding: 24px; border-radius: 12px; border: 1px solid var(--border); }
+    h1 { margin: 0 0 8px 0; font-size: 28px; }
+    h2 { margin: 28px 0 12px; font-size: 20px; }
+    h3 { margin: 20px 0 10px; font-size: 16px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: 14px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 16px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+    .card .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .card .value { font-size: 18px; font-weight: 600; margin-top: 6px; }
+    table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; font-size: 14px; }
+    th { background: #f1f3f5; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    .section { margin-top: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #eef2f6; color: var(--muted); }
+    .match-yes { color: var(--success); font-weight: 600; }
+    .match-no { color: var(--danger); font-weight: 600; }
+    .status-unsupported { color: var(--danger); font-weight: 600; }
+    .status-weak { color: var(--warning); font-weight: 600; }
+    .row-unsupported { background: #fff5f5; }
+    .row-unsupported td { border-bottom-color: #f0d7d7; }
+    .sample-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+    .sample-unsupported { border-color: #f0d7d7; background: #fffaf9; }
+    .sample-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 16px; font-size: 13px; color: var(--muted); }
+    .sample-grid strong { color: var(--text); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Evaluation Report: live-openai-2026-03-23</h1>
+      <div class="meta">
+        <div><strong>Model:</strong> openai:gpt-4o-mini-2024-07-18</div>
+        <div><strong>Generated:</strong> 2026-03-24 05:25 UTC</div>
+        <div><strong>Samples:</strong> 10</div>
+        <div><strong>Accuracy:</strong> 100.0%</div>
+      </div>
+      <div class="cards">
+        <div class="card"><div class="label">Accuracy</div><div class="value">100.0%</div></div>
+        <div class="card"><div class="label">Samples</div><div class="value">10</div></div>
+        <div class="card"><div class="label">LLM Calls</div><div class="value">10</div></div>
+        <div class="card"><div class="label">Retries</div><div class="value">0</div></div>
+        <div class="card"><div class="label">Total Tokens</div><div class="value">3190</div></div>
+        <div class="card"><div class="label">Total Cost (USD)</div><div class="value">0.000863</div></div>
+        <div class="card"><div class="label">Total Latency (ms)</div><div class="value">21222.0</div></div>
+        <div class="card"><div class="label">Avg Latency (ms)</div><div class="value">2122.2</div></div>
+      </div>
+    </header>
+    <section class="section">
+      <h2>Classification Metrics</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Label</th>
+            <th>Support</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1</th>
+            <th>TP</th>
+            <th>FP</th>
+            <th>FN</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>benign</td><td>4</td><td>1.00</td><td>1.00</td><td>1.00</td><td>4</td><td>0</td><td>0</td></tr>
+          <tr><td>phishing</td><td>4</td><td>1.00</td><td>1.00</td><td>1.00</td><td>4</td><td>0</td><td>0</td></tr>
+          <tr><td>impersonation</td><td>2</td><td>1.00</td><td>1.00</td><td>1.00</td><td>2</td><td>0</td><td>0</td></tr>
+        </tbody>
+      </table>
+      <div class="grid" style="margin-top: 12px;">
+        <div class="card"><div class="label">Macro Avg</div><div class="value">P=1.00 R=1.00 F1=1.00</div></div>
+        <div class="card"><div class="label">Micro Avg</div><div class="value">P=1.00 R=1.00 F1=1.00</div></div>
+        <div class="card"><div class="label">Weighted Avg</div><div class="value">P=1.00 R=1.00 F1=1.00</div></div>
+        <div class="card"><div class="label">Total Support</div><div class="value">10</div></div>
+      </div>
+    </section>
+    <section class="section">
+      <h2>LLM Metadata</h2>
+      <div class="grid">
+        <div class="card"><div class="label">Providers</div><div class="value">openai (10)</div></div>
+        <div class="card"><div class="label">Models</div><div class="value">gpt-4o-mini-2024-07-18 (10)</div></div>
+        <div class="card"><div class="label">LLM Calls</div><div class="value">10</div></div>
+        <div class="card"><div class="label">Retries</div><div class="value">0</div></div>
+        <div class="card"><div class="label">Input Tokens</div><div class="value">2335</div></div>
+        <div class="card"><div class="label">Output Tokens</div><div class="value">855</div></div>
+        <div class="card"><div class="label">Total Tokens</div><div class="value">3190</div></div>
+        <div class="card"><div class="label">Total Cost (USD)</div><div class="value">0.000863</div></div>
+        <div class="card"><div class="label">Total Latency (ms)</div><div class="value">21222.0</div></div>
+        <div class="card"><div class="label">Avg Latency (ms)</div><div class="value">2122.2</div></div>
+      </div>
+    </section>
+    <section class="section">
+      <h2>Confusion Matrix</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Actual \ Predicted</th>
+            <th>benign</th>
+            <th>phishing</th>
+            <th>impersonation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>benign</strong></td>
+            <td>4</td>
+            <td>0</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td><strong>phishing</strong></td>
+            <td>0</td>
+            <td>4</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td><strong>impersonation</strong></td>
+            <td>0</td>
+            <td>0</td>
+            <td>2</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="section">
+      <h2>Explanation Support</h2>
+      <div class="grid">
+        <div class="card"><div class="label">Supported</div><div class="value">9</div></div>
+        <div class="card"><div class="label">Weak</div><div class="value">0</div></div>
+        <div class="card"><div class="label">Unsupported</div><div class="value">1</div></div>
+        <div class="card"><div class="label">Unavailable</div><div class="value">0</div></div>
+      </div>
+      <h3>Examples</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Sample</th>
+            <th>Actual</th>
+            <th>Predicted</th>
+            <th>Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-unsupported">
+            <td>imp_001</td>
+            <td>impersonation</td>
+            <td>impersonation</td>
+            <td>unsupported</td>
+            <td>high-risk label with no supporting signals</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="section">
+      <h2>Results</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Sample</th>
+            <th>Actual</th>
+            <th>Predicted</th>
+            <th>Match</th>
+            <th>Risk</th>
+            <th>Confidence</th>
+            <th>Explanation Support</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="">
+            <td>benign_001</td>
+            <td>benign</td>
+            <td>benign</td>
+            <td class="match-yes">Yes</td>
+            <td>0.10</td>
+            <td>0.90</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="">
+            <td>benign_002</td>
+            <td>benign</td>
+            <td>benign</td>
+            <td class="match-yes">Yes</td>
+            <td>0.10</td>
+            <td>0.90</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="">
+            <td>benign_003</td>
+            <td>benign</td>
+            <td>benign</td>
+            <td class="match-yes">Yes</td>
+            <td>0.10</td>
+            <td>0.90</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="">
+            <td>benign_004</td>
+            <td>benign</td>
+            <td>benign</td>
+            <td class="match-yes">Yes</td>
+            <td>0.10</td>
+            <td>0.85</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="row-unsupported">
+            <td>imp_001</td>
+            <td>impersonation</td>
+            <td>impersonation</td>
+            <td class="match-yes">Yes</td>
+            <td>0.85</td>
+            <td>0.90</td>
+            <td class="status-unsupported">unsupported</td>
+          </tr>
+          <tr class="">
+            <td>imp_002</td>
+            <td>impersonation</td>
+            <td>impersonation</td>
+            <td class="match-yes">Yes</td>
+            <td>0.85</td>
+            <td>0.90</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="">
+            <td>phish_001</td>
+            <td>phishing</td>
+            <td>phishing</td>
+            <td class="match-yes">Yes</td>
+            <td>0.95</td>
+            <td>0.90</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="">
+            <td>phish_002</td>
+            <td>phishing</td>
+            <td>phishing</td>
+            <td class="match-yes">Yes</td>
+            <td>0.85</td>
+            <td>0.90</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="">
+            <td>phish_003</td>
+            <td>phishing</td>
+            <td>phishing</td>
+            <td class="match-yes">Yes</td>
+            <td>0.90</td>
+            <td>0.95</td>
+            <td class="">supported</td>
+          </tr>
+          <tr class="">
+            <td>phish_004</td>
+            <td>phishing</td>
+            <td>phishing</td>
+            <td class="match-yes">Yes</td>
+            <td>0.90</td>
+            <td>0.95</td>
+            <td class="">supported</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <section class="section">
+      <h2>Per-Sample Execution Details</h2>
+      <div class="sample-card">
+        <h3>benign_001</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> openai</div>
+          <div><strong>Model:</strong> gpt-4o-mini-2024-07-18</div>
+          <div><strong>Latency (ms):</strong> 2403</div>
+          <div><strong>Input tokens:</strong> 223</div>
+          <div><strong>Output tokens:</strong> 79</div>
+          <div><strong>Token cost (USD):</strong> 8.085e-05</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> N/A</div>
+          <div><strong>Reliability run id:</strong> b15832ef-4f5b-4850-9db1-d1bfae9fb87a</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> 4d695639-e126-56d1-b80a-e11605878dec</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>benign_002</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> openai</div>
+          <div><strong>Model:</strong> gpt-4o-mini-2024-07-18</div>
+          <div><strong>Latency (ms):</strong> 2132</div>
+          <div><strong>Input tokens:</strong> 217</div>
+          <div><strong>Output tokens:</strong> 75</div>
+          <div><strong>Token cost (USD):</strong> 7.755e-05</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> explanation references links but no urls were extracted</div>
+          <div><strong>Reliability run id:</strong> 68bdb12e-f4d0-4118-aac7-fc7baad99d85</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> 792907ed-6315-5f12-ac01-2576e20a233c</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>benign_003</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> openai</div>
+          <div><strong>Model:</strong> gpt-4o-mini-2024-07-18</div>
+          <div><strong>Latency (ms):</strong> 2017</div>
+          <div><strong>Input tokens:</strong> 218</div>
+          <div><strong>Output tokens:</strong> 79</div>
+          <div><strong>Token cost (USD):</strong> 8.01e-05</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> explanation references links but no urls were extracted</div>
+          <div><strong>Reliability run id:</strong> 22771b0a-88bc-4e91-ba8e-d4e9cc072a0a</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> b4f4ca52-236a-5cf5-ae48-d802d07e4d16</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>benign_004</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> openai</div>
+          <div><strong>Model:</strong> gpt-4o-mini-2024-07-18</div>
+          <div><strong>Latency (ms):</strong> 2000</div>
+          <div><strong>Input tokens:</strong> 227</div>
+          <div><strong>Output tokens:</strong> 97</div>
+          <div><strong>Token cost (USD):</strong> 9.225e-05</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> N/A</div>
+          <div><strong>Reliability run id:</strong> cf55bff4-1c05-42fc-9c6c-26f22f5e77a6</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> 4865a826-3722-52e0-a233-c952757f448e</div>
+        </div>
+      </div>
+      <div class="sample-card sample-unsupported">
+        <h3>imp_001</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> openai</div>
+          <div><strong>Model:</strong> gpt-4o-mini-2024-07-18</div>
+          <div><strong>Latency (ms):</strong> 2280</div>
+          <div><strong>Input tokens:</strong> 225</div>
+          <div><strong>Output tokens:</strong> 80</div>
+          <div><strong>Token cost (USD):</strong> 8.175e-05</div>
+          <div><strong>Explanation support status:</strong> unsupported</div>
+          <div><strong>Explanation support notes:</strong> high-risk label with no supporting signals</div>
+          <div><strong>Reliability run id:</strong> 9d4dd443-2a64-4b29-974d-7c0a5fdf6c34</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> ccc30041-eff4-5ef7-b33e-f4a3bd2108a8</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>imp_002</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> openai</div>
+          <div><strong>Model:</strong> gpt-4o-mini-2024-07-18</div>
+          <div><strong>Latency (ms):</strong> 1868</div>
+          <div><strong>Input tokens:</strong> 226</div>
+          <div><strong>Output tokens:</strong> 92</div>
+          <div><strong>Token cost (USD):</strong> 8.91e-05</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> N/A</div>
+          <div><strong>Reliability run id:</strong> 9a27af5a-9e98-4679-a170-fb3c9c04ee08</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> b655cdee-179f-534c-a162-b854de02ebad</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>phish_001</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> openai</div>
+          <div><strong>Model:</strong> gpt-4o-mini-2024-07-18</div>
+          <div><strong>Latency (ms):</strong> 2451</div>
+          <div><strong>Input tokens:</strong> 268</div>
+          <div><strong>Output tokens:</strong> 77</div>
+          <div><strong>Token cost (USD):</strong> 8.64e-05</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> N/A</div>
+          <div><strong>Reliability run id:</strong> 6c064d41-b98b-47d9-a7d7-8ed5aadaaeac</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> 4518abc0-a53c-5374-b118-c2956375855d</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>phish_002</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> openai</div>
+          <div><strong>Model:</strong> gpt-4o-mini-2024-07-18</div>
+          <div><strong>Latency (ms):</strong> 2161</div>
+          <div><strong>Input tokens:</strong> 242</div>
+          <div><strong>Output tokens:</strong> 88</div>
+          <div><strong>Token cost (USD):</strong> 8.91e-05</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> N/A</div>
+          <div><strong>Reliability run id:</strong> 67502a52-10c4-4181-ae59-8f1c8bdc6e65</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> 557ed160-4b45-5fef-88b8-01bd6895a449</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>phish_003</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> openai</div>
+          <div><strong>Model:</strong> gpt-4o-mini-2024-07-18</div>
+          <div><strong>Latency (ms):</strong> 2051</div>
+          <div><strong>Input tokens:</strong> 247</div>
+          <div><strong>Output tokens:</strong> 103</div>
+          <div><strong>Token cost (USD):</strong> 9.885e-05</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> N/A</div>
+          <div><strong>Reliability run id:</strong> d42bd7b3-0dc5-436c-b7c8-29c8bffd0e60</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> b5a943ee-0d6d-5ef0-b3c2-30710a78ebdf</div>
+        </div>
+      </div>
+      <div class="sample-card">
+        <h3>phish_004</h3>
+        <div class="sample-grid">
+          <div><strong>Provider:</strong> openai</div>
+          <div><strong>Model:</strong> gpt-4o-mini-2024-07-18</div>
+          <div><strong>Latency (ms):</strong> 1859</div>
+          <div><strong>Input tokens:</strong> 242</div>
+          <div><strong>Output tokens:</strong> 85</div>
+          <div><strong>Token cost (USD):</strong> 8.73e-05</div>
+          <div><strong>Explanation support status:</strong> supported</div>
+          <div><strong>Explanation support notes:</strong> N/A</div>
+          <div><strong>Reliability run id:</strong> 468a8aee-e699-4b35-b6ef-78d0ecc6b3d1</div>
+          <div><strong>Reliability phase id:</strong> b2c3d4e5-f6a7-8901-bcde-f12345678901</div>
+          <div><strong>Reliability prompt id:</strong> 9c3137f5-14c9-5180-8265-c90b19cd5062</div>
+          <div><strong>Reliability call id:</strong> f03da650-b25d-54b4-a09d-c2e845622949</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

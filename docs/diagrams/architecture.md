@@ -12,6 +12,7 @@
 │  │  examples/       │    │  evaluation/runner.py  │    │  evaluation/         │  │
 │  │  run_eval.py     │    │  (CLI entry point)     │    │  report.py           │  │
 │  │  (quickstart)    │    │                        │    │  metrics.py          │  │
+│  │                 │    │                        │    │  support_check.py    │  │
 │  └────────┬─────────┘    └───────────┬────────────┘    └──────────────────────┘  │
 │           │                          │                                            │
 │           │              ┌───────────▼────────────┐                              │
@@ -128,7 +129,9 @@ evaluation/runner.py  --dataset datasets/ --name run-001 --model gpt-4o-mini
                        └─ INSERT security_eval.investigation_results
         │
         ├─ EvalRepository.mark_evaluation_run_complete()
-        ├─ compute_accuracy(), compute_label_stats()  → P/R/F1 per label
+        ├─ compute_classification_metrics() → macro/micro/weighted + per-label
+        ├─ compute_confusion_matrix()
+        ├─ evaluate_explanation_support()
         ├─ write_json_report()  → outputs/<name>.json
         └─ write_markdown_report()  → outputs/<name>.md
 ```

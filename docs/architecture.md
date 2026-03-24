@@ -3,4 +3,5 @@
 - Those signals are assembled into a structured evidence bundle.
 - The evidence bundle is sent through the reliability framework for validated LLM reasoning.
 - The system returns a structured investigation result with label, score, explanation, and audit trail.
-- The evaluation runner compares predictions to ground truth and generates metrics and reports.
+- The evaluation runner compares predictions to ground truth and generates metrics and reports, including confusion-matrix-friendly summaries.
+- A lightweight explanation support check flags weak/unsupported reasoning based on available signals.

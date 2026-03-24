@@ -1,0 +1,365 @@
+{
+  "run_name": "live-anthropic-2026-03-23",
+  "model": "anthropic:claude-haiku-4-5-20251001",
+  "generated_at": "2026-03-24T05:24:50.348510+00:00",
+  "summary": {
+    "total_samples": 10,
+    "accuracy": 0.8,
+    "per_label": {
+      "phishing": {
+        "label": "phishing",
+        "tp": 4,
+        "fp": 2,
+        "fn": 0,
+        "precision": 0.6666666666666666,
+        "recall": 1.0,
+        "f1": 0.8
+      },
+      "impersonation": {
+        "label": "impersonation",
+        "tp": 0,
+        "fp": 0,
+        "fn": 2,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "benign": {
+        "label": "benign",
+        "tp": 4,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      }
+    },
+    "classification_metrics": {
+      "accuracy": 0.8,
+      "macro_precision": 0.5555555555555555,
+      "macro_recall": 0.6666666666666666,
+      "macro_f1": 0.6,
+      "micro_precision": 0.8,
+      "micro_recall": 0.8,
+      "micro_f1": 0.8000000000000002,
+      "weighted_precision": 0.6666666666666666,
+      "weighted_recall": 0.8,
+      "weighted_f1": 0.72,
+      "per_label": {
+        "benign": {
+          "support": 4,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "phishing": {
+          "support": 4,
+          "precision": 0.6666666666666666,
+          "recall": 1.0,
+          "f1": 0.8
+        },
+        "impersonation": {
+          "support": 2,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      },
+      "labels": [
+        "benign",
+        "phishing",
+        "impersonation"
+      ],
+      "total_support": 10
+    },
+    "confusion_matrix": {
+      "labels": [
+        "benign",
+        "phishing",
+        "impersonation"
+      ],
+      "rows": {
+        "benign": {
+          "benign": 4,
+          "phishing": 0,
+          "impersonation": 0
+        },
+        "phishing": {
+          "benign": 0,
+          "phishing": 4,
+          "impersonation": 0
+        },
+        "impersonation": {
+          "benign": 0,
+          "phishing": 2,
+          "impersonation": 0
+        }
+      }
+    },
+    "explanation_support": {
+      "supported_count": 9,
+      "weak_count": 0,
+      "unsupported_count": 1,
+      "unavailable_count": 0,
+      "examples": [
+        {
+          "sample_id": "imp_001",
+          "actual_label": "impersonation",
+          "predicted_label": "phishing",
+          "status": "unsupported",
+          "notes": [
+            "high-risk label with no supporting signals"
+          ]
+        }
+      ]
+    },
+    "llm": {
+      "providers": {
+        "anthropic": 10
+      },
+      "models": {
+        "claude-haiku-4-5-20251001": 10
+      },
+      "llm_call_count": 10,
+      "retry_count": 0,
+      "total_input_tokens": 2753,
+      "total_output_tokens": 1266,
+      "total_tokens": 4019,
+      "total_cost_usd": 0.007266,
+      "total_latency_ms": 15992.0,
+      "avg_latency_ms": 1599.2
+    }
+  },
+  "results": [
+    {
+      "sample_id": "benign_001",
+      "actual_label": "benign",
+      "predicted_label": "benign",
+      "risk_score": 0.15,
+      "confidence": 0.82,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "c6097648-2617-48c9-a1b4-a1f010a87cd4",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "0795d244-a602-517d-ae1d-ec4be311de04",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "latency_ms": 1481,
+      "input_tokens": 257,
+      "output_tokens": 111,
+      "token_cost_usd": 0.0006496,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": [
+        "explanation references links but no urls were extracted"
+      ]
+    },
+    {
+      "sample_id": "benign_002",
+      "actual_label": "benign",
+      "predicted_label": "benign",
+      "risk_score": 0.15,
+      "confidence": 0.85,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "4258df70-379b-488a-8b18-2cbe6d1552de",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "b149f2c4-09c9-5215-970c-1d91ebd27ee0",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "latency_ms": 1733,
+      "input_tokens": 252,
+      "output_tokens": 112,
+      "token_cost_usd": 0.0006496,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": [
+        "explanation references links but no urls were extracted"
+      ]
+    },
+    {
+      "sample_id": "benign_003",
+      "actual_label": "benign",
+      "predicted_label": "benign",
+      "risk_score": 0.15,
+      "confidence": 0.82,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "3870087e-a993-4fd4-a3b1-3916842b468e",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "6841684b-0d7a-5f0d-9ed8-c9d565ec24aa",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "latency_ms": 1310,
+      "input_tokens": 256,
+      "output_tokens": 113,
+      "token_cost_usd": 0.0006568,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": [
+        "explanation references links but no urls were extracted"
+      ]
+    },
+    {
+      "sample_id": "benign_004",
+      "actual_label": "benign",
+      "predicted_label": "benign",
+      "risk_score": 0.25,
+      "confidence": 0.72,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "ea83bcb3-49cc-4c96-ad66-aa74014e117d",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "9a29d096-1751-5ab6-bead-0568091f26f8",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "latency_ms": 1217,
+      "input_tokens": 264,
+      "output_tokens": 100,
+      "token_cost_usd": 0.0006112,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": [
+        "explanation references links but no urls were extracted"
+      ]
+    },
+    {
+      "sample_id": "imp_001",
+      "actual_label": "impersonation",
+      "predicted_label": "phishing",
+      "risk_score": 0.82,
+      "confidence": 0.85,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "4640393f-2637-4d6e-8b71-303949bf4ce8",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "3ae1f5a4-1211-55ec-a872-407ea087b61c",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "latency_ms": 1409,
+      "input_tokens": 259,
+      "output_tokens": 115,
+      "token_cost_usd": 0.0006672,
+      "explanation_support_status": "unsupported",
+      "explanation_support_notes": [
+        "high-risk label with no supporting signals"
+      ]
+    },
+    {
+      "sample_id": "imp_002",
+      "actual_label": "impersonation",
+      "predicted_label": "phishing",
+      "risk_score": 0.95,
+      "confidence": 0.98,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "da9653c3-433a-41f6-96f8-ce33cf100c23",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "954584f1-8175-523b-bc8f-634c35872cea",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "latency_ms": 2192,
+      "input_tokens": 269,
+      "output_tokens": 157,
+      "token_cost_usd": 0.0008432,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": []
+    },
+    {
+      "sample_id": "phish_001",
+      "actual_label": "phishing",
+      "predicted_label": "phishing",
+      "risk_score": 0.98,
+      "confidence": 0.99,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "3b3c5603-8e95-4ee4-9236-7bb3ccd262a8",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "4fd0f460-51ee-5d32-9c04-c2bd7edf01da",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "latency_ms": 1769,
+      "input_tokens": 315,
+      "output_tokens": 152,
+      "token_cost_usd": 0.00086,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": []
+    },
+    {
+      "sample_id": "phish_002",
+      "actual_label": "phishing",
+      "predicted_label": "phishing",
+      "risk_score": 0.95,
+      "confidence": 0.92,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "7c58dc8c-3709-4fc0-87d4-ac027d7a1f20",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "3f74aec5-9895-51dd-bafa-52762f4e1a99",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "latency_ms": 1319,
+      "input_tokens": 294,
+      "output_tokens": 118,
+      "token_cost_usd": 0.0007072,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": []
+    },
+    {
+      "sample_id": "phish_003",
+      "actual_label": "phishing",
+      "predicted_label": "phishing",
+      "risk_score": 0.95,
+      "confidence": 0.98,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "298e7478-fcff-47ad-8878-77ba29d4cbe8",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "d39288f3-c76c-5bc2-a91d-23f0a73f8864",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "latency_ms": 2017,
+      "input_tokens": 293,
+      "output_tokens": 154,
+      "token_cost_usd": 0.0008504,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": []
+    },
+    {
+      "sample_id": "phish_004",
+      "actual_label": "phishing",
+      "predicted_label": "phishing",
+      "risk_score": 0.92,
+      "confidence": 0.95,
+      "explanation": null,
+      "signals_json": null,
+      "timeline_json": null,
+      "reliability_run_id": "3dbd3fb1-2873-48a7-bdad-898bd753ab06",
+      "reliability_phase_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "reliability_prompt_id": "9c3137f5-14c9-5180-8265-c90b19cd5062",
+      "reliability_call_id": "9db416b1-cc6d-5bec-8999-b6ffa55333fa",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "latency_ms": 1545,
+      "input_tokens": 294,
+      "output_tokens": 134,
+      "token_cost_usd": 0.0007712,
+      "explanation_support_status": "supported",
+      "explanation_support_notes": []
+    }
+  ]
+}

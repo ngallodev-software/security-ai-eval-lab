@@ -18,7 +18,7 @@ def _naive_utc(dt: datetime | None) -> datetime | None:
         return None
     return dt.astimezone(timezone.utc).replace(tzinfo=None) if dt.tzinfo else dt
 
-from sqlalchemy import select, update
+from sqlalchemy import select, update, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -103,6 +103,57 @@ class EvalRepository:
             .order_by(InvestigationResult.created_at, InvestigationResult.id)
         )
         return list(result.scalars().all())
+
+    async def get_evaluation_run(self, evaluation_run_id: uuid.UUID) -> EvaluationRun | None:
+        result = await self.session.execute(
+            select(EvaluationRun).where(EvaluationRun.id == evaluation_run_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_evaluation_run_by_name(self, name: str) -> EvaluationRun | None:
+        result = await self.session.execute(
+            select(EvaluationRun)
+            .where(EvaluationRun.name == name)
+            .order_by(EvaluationRun.started_at.desc())
+        )
+        return result.scalars().first()
+
+    async def get_llm_call_metadata(
+        self, call_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, dict[str, Any]]:
+        if not call_ids:
+            return {}
+        result = await self.session.execute(
+            text(
+                """
+                SELECT
+                    call_id,
+                    provider,
+                    model,
+                    latency_ms,
+                    input_tokens,
+                    output_tokens,
+                    token_cost_usd,
+                    retry_attempt_num
+                FROM reliability.llm_calls
+                WHERE call_id = ANY(:call_ids)
+                """
+            ),
+            {"call_ids": call_ids},
+        )
+        rows = result.fetchall()
+        return {
+            row.call_id: {
+                "provider": row.provider,
+                "model": row.model,
+                "latency_ms": row.latency_ms,
+                "input_tokens": row.input_tokens,
+                "output_tokens": row.output_tokens,
+                "token_cost_usd": row.token_cost_usd,
+                "retry_attempt_num": row.retry_attempt_num,
+            }
+            for row in rows
+        }
 
     # Backward-compatible aliases for the current runner task.
     save_investigation_result = insert_investigation_result
