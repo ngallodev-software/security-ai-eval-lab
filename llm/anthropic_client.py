@@ -59,7 +59,11 @@ class AnthropicClient(BaseLLMClient):
         latency_ms = int((time.perf_counter() - t0) * 1000)
 
         text_block = next(b for b in response.content if b.type == "text")
-        response_raw = text_block.text
+        response_raw = text_block.text.strip()
+        # Strip markdown code fences — Claude sometimes wraps JSON in ```json ... ```
+        # even when instructed not to. The JsonSchemaValidator expects bare JSON.
+        if response_raw.startswith("```"):
+            response_raw = response_raw.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
 
         usage = response.usage
         input_tokens = usage.input_tokens if usage else None
