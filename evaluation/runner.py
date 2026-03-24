@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -151,7 +152,7 @@ async def investigate_sample(
 # Main async runner
 # ---------------------------------------------------------------------------
 
-async def run_evaluation(dataset_path: str, name: str, model: str, dry_run: bool) -> None:
+async def run_evaluation(dataset_path: str, name: str, model: str, provider: str, dry_run: bool) -> None:
     samples = load_samples(dataset_path)
     if not samples:
         print("No samples found.", file=sys.stderr)
@@ -176,9 +177,21 @@ async def run_evaluation(dataset_path: str, name: str, model: str, dry_run: bool
     else:
         _ensure_reliability_fw_on_path()
         from agents.reliability_adapter import PhaseExecutorAdapter
-        from llm.openai_client import OpenAIClient
 
-        adapter = PhaseExecutorAdapter(llm_client=OpenAIClient(model=model))
+        # Resolve classification-stage provider/model.
+        # CLASSIFICATION_PROVIDER / CLASSIFICATION_MODEL are the stage-specific overrides.
+        # Fall back to the CLI args (which themselves fall back to LLM_PROVIDER / DEFAULT_MODEL).
+        classification_provider = os.environ.get("CLASSIFICATION_PROVIDER") or provider
+        classification_model = os.environ.get("CLASSIFICATION_MODEL") or model
+
+        if classification_provider == "anthropic":
+            from llm.anthropic_client import AnthropicClient
+            llm_client = AnthropicClient(model=classification_model)
+        else:
+            from llm.openai_client import OpenAIClient
+            llm_client = OpenAIClient(model=classification_model)
+
+        adapter = PhaseExecutorAdapter(llm_client=llm_client)
         async with eval_session() as eval_db:
             eval_repo = EvalRepository(eval_db)
 
@@ -248,11 +261,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="security-ai-eval-lab evaluation runner")
     parser.add_argument("--dataset", default="datasets", help="Path to dataset directory")
     parser.add_argument("--name", default=f"eval-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}", help="Evaluation run name")
-    parser.add_argument("--model", default="gpt-4o-mini", help="OpenAI model ID")
+    parser.add_argument("--model", default=os.environ.get("DEFAULT_MODEL", "gpt-4o-mini"), help="Classification model ID (overrides CLASSIFICATION_MODEL / DEFAULT_MODEL)")
+    parser.add_argument("--provider", default=os.environ.get("LLM_PROVIDER", "openai"), choices=["openai", "anthropic"], help="Classification LLM provider (overrides CLASSIFICATION_PROVIDER / LLM_PROVIDER)")
     parser.add_argument("--dry-run", action="store_true", help="Skip DB writes")
     args = parser.parse_args()
 
-    asyncio.run(run_evaluation(args.dataset, args.name, args.model, args.dry_run))
+    asyncio.run(run_evaluation(args.dataset, args.name, args.model, args.provider, args.dry_run))
 
 
 if __name__ == "__main__":

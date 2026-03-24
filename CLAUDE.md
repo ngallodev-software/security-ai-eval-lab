@@ -8,8 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Quickstart — no DB or API key needed
 python3 -m examples.run_eval
 
-# Full evaluation run (requires DATABASE_URL and ANTHROPIC_API_KEY)
-python3 -m evaluation.runner --dataset datasets/ --name my-run-001 --model claude-haiku-4-5-20251001
+# Full evaluation run — OpenAI (requires DATABASE_URL and OPENAI_API_KEY)
+python3 -m evaluation.runner --dataset datasets/ --name my-run-001 --model gpt-4o-mini
+
+# Full evaluation run — Anthropic (requires DATABASE_URL and ANTHROPIC_API_KEY)
+python3 -m evaluation.runner --dataset datasets/ --name my-run-001 --provider anthropic --model claude-haiku-4-5-20251001
 
 # Dry-run (inference only, no DB writes)
 python3 -m evaluation.runner --dataset datasets/ --name test --dry-run
@@ -27,7 +30,14 @@ Both `security-ai-eval-lab` and `ai-reliability-fw` share a single Postgres inst
 
 Required env vars:
 - `DATABASE_URL` — PostgreSQL URL (asyncpg driver, e.g. `postgresql+asyncpg://...`)
-- `ANTHROPIC_API_KEY` — only needed for the live runner path
+- `OPENAI_API_KEY` — required when using OpenAI provider
+- `ANTHROPIC_API_KEY` — required when using Anthropic provider
+
+Classification stage (fw PhaseExecutor) — resolved in priority order:
+- `CLASSIFICATION_PROVIDER` — provider for the classification LLM (`openai` or `anthropic`)
+- `CLASSIFICATION_MODEL` — model ID for the classification LLM
+- Falls back to `LLM_PROVIDER` / `DEFAULT_MODEL` if unset
+- Both overridden by `--provider` / `--model` CLI args
 
 ## Architecture
 
@@ -37,7 +47,7 @@ This is a research framework for evaluating LLM performance on security classifi
 
 **Quickstart path** (`examples/run_eval.py`): Uses `EmailThreatInvestigationAgent` with `FakeReliabilityExecutor`. No Postgres, no API key. Good for wiring tests.
 
-**Full evaluation path** (`evaluation/runner.py`): Uses `PhaseExecutorAdapter` → `ai-reliability-fw`'s `PhaseExecutor` → Anthropic API. Persists results to Postgres.
+**Full evaluation path** (`evaluation/runner.py`): Uses `PhaseExecutorAdapter` → `ai-reliability-fw`'s `PhaseExecutor` → OpenAI API. Persists results to Postgres.
 
 ### Layered design
 

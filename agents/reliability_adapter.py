@@ -237,8 +237,9 @@ class PhaseExecutorAdapter(ReliabilityExecutorProtocol):
             resolved_prompt_id = await self._ensure_prompt(repo)
             run_id = await self._create_run(repo)
 
-            # Deterministic serialization of the evidence bundle.
-            input_artifact = _serialize_evidence_bundle(structured_evidence)
+            # Pass the dict directly — InputIntegrityValidator expects a dict with .get().
+            # PhaseExecutor converts it to str via str(input_artifact) before the LLM call.
+            input_artifact = structured_evidence
 
             fw_result = await executor.execute(
                 run_id=run_id,

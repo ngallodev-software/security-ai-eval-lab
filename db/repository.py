@@ -8,8 +8,15 @@ persisted by ai-reliability-fw — not duplicated here.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Mapping
+
+
+def _naive_utc(dt: datetime | None) -> datetime | None:
+    """Strip timezone info so asyncpg accepts a TIMESTAMP WITHOUT TIME ZONE column."""
+    if dt is None:
+        return None
+    return dt.astimezone(timezone.utc).replace(tzinfo=None) if dt.tzinfo else dt
 
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
@@ -29,8 +36,8 @@ class EvalRepository:
             "model_label": data.get("model_label") or data.get("model"),
             "prompt_version": data.get("prompt_version"),
             "status": data.get("status") or "running",
-            "started_at": data.get("started_at") or data.get("created_at") or datetime.utcnow(),
-            "completed_at": data.get("completed_at"),
+            "started_at": _naive_utc(data.get("started_at") or data.get("created_at")) or datetime.utcnow(),
+            "completed_at": _naive_utc(data.get("completed_at")),
         }
         run_id = data.get("id") or data.get("evaluation_run_id")
         record["id"] = run_id or uuid.uuid4()
@@ -51,7 +58,7 @@ class EvalRepository:
             "reliability_phase_id": data["reliability_phase_id"],
             "reliability_prompt_id": data["reliability_prompt_id"],
             "reliability_call_id": data.get("reliability_call_id"),
-            "created_at": data.get("created_at") or datetime.utcnow(),
+            "created_at": _naive_utc(data.get("created_at")) or datetime.utcnow(),
         }
         result_id = data.get("id") or data.get("result_id")
         record["id"] = result_id or uuid.uuid4()
@@ -73,7 +80,7 @@ class EvalRepository:
         stmt = (
             update(EvaluationRun)
             .where(EvaluationRun.id == evaluation_run_id)
-            .values(status=status, completed_at=completed_at or datetime.utcnow())
+            .values(status=status, completed_at=_naive_utc(completed_at) or datetime.utcnow())
             .returning(EvaluationRun.id)
         )
         result = await self.session.execute(stmt)
