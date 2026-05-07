@@ -10,6 +10,7 @@ investigation result schema.
 """
 from __future__ import annotations
 
+import asyncio
 import time
 
 from openai import AsyncOpenAI
@@ -46,23 +47,37 @@ class OpenAIClient(BaseLLMClient):
         OpenAI API key. If None, reads from OPENAI_API_KEY env var.
     """
 
-    def __init__(self, model: str = "gpt-4o-mini", api_key: str | None = None) -> None:
+    def __init__(
+        self,
+        model: str = "gpt-4o-mini",
+        api_key: str | None = None,
+        timeout_seconds: float = 60.0,
+    ) -> None:
         self._model = model
+        self._timeout_seconds = timeout_seconds
         self._client = AsyncOpenAI(api_key=api_key)
 
     async def call(self, prompt: str, model: str | None = None) -> dict:
         effective_model = model or self._model
 
         t0 = time.perf_counter()
-        response = await self._client.chat.completions.create(
-            model=effective_model,
-            max_tokens=512,
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt},
-            ],
-        )
+        try:
+            response = await asyncio.wait_for(
+                self._client.chat.completions.create(
+                    model=effective_model,
+                    max_tokens=512,
+                    response_format={"type": "json_object"},
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt},
+                    ],
+                ),
+                timeout=self._timeout_seconds,
+            )
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError(
+                f"OpenAI request timed out after {self._timeout_seconds:.1f}s"
+            ) from exc
         latency_ms = int((time.perf_counter() - t0) * 1000)
 
         choice = response.choices[0]

@@ -33,7 +33,8 @@ PhaseExecutorAdapter                    ← lives in security-ai-eval-lab/agents
         ▼
 PhaseExecutor                           ← lives in ai-reliability-fw/src/engine/phase_executor.py
         │
-        │ validates input -> calls AnthropicClient -> validates output -> retries / escalates
+        │ validates input structure -> calls the configured OpenAIClient / AnthropicClient on a bounded structured email summary
+        │ validates output -> retries / escalates
         │ persists llm_calls and escalation_records internally
         ▼
 returns {"status": "SUCCESS", "artifact": "<json>", "call_id": ..., ...}

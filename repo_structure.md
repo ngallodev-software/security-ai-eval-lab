@@ -1,6 +1,6 @@
 security-ai-eval-lab/
 ├── README.md
-├── pyproject.toml              # declares ai-reliability-fw as a path dependency
+├── pyproject.toml              # package metadata + ai-reliability-fw dependency pin
 ├── alembic.ini
 ├── migrations/
 │   ├── env.py
@@ -11,16 +11,17 @@ security-ai-eval-lab/
 │   ├── impersonation/
 │   └── benign/
 ├── agents/
-│   ├── email_threat_agent.py         # signal extraction + agent orchestration
+│   ├── email_threat_agent.py         # current signal helpers + agent orchestration
 │   └── reliability_adapter.py        # PhaseExecutor adapter (integration boundary)
 ├── llm/
-│   └── anthropic_client.py           # AnthropicClient implementing BaseLLMClient
+│   ├── anthropic_client.py           # AnthropicClient implementing BaseLLMClient
+│   └── openai_client.py              # OpenAIClient implementing BaseLLMClient
 ├── db/
 │   ├── models.py                     # EvaluationRun, InvestigationResult ORM models
 │   ├── repository.py                 # EvalRepository
 │   └── session.py                    # async_session, get_db()
 ├── signals/
-│   ├── auth_results.py
+│   ├── auth_results.py               # placeholder module stubs for future extraction
 │   ├── domain_age.py
 │   ├── brand_similarity.py
 │   ├── domain_extract.py
@@ -28,6 +29,7 @@ security-ai-eval-lab/
 │   └── passive_dns.py
 ├── evaluation/
 │   ├── runner.py                     # async end-to-end evaluation runner
+│   ├── db_report.py                  # DB-backed JSON/Markdown/HTML report generator
 │   ├── metrics.py                    # accuracy / precision / recall / F1
 │   └── report.py
 ├── schemas/

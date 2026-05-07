@@ -73,7 +73,7 @@ JSON dataset sample
 
 ### ai-reliability-fw dependency
 
-Located at `/lump/apps/ai-reliability-fw`. The runner dynamically adds `ai-reliability-fw/src` to `sys.path` at runtime via `_ensure_reliability_fw_on_path()`. The `pyproject.toml` also declares it as a local path dependency.
+Located at `/lump/apps/ai-reliability-fw`. The runner dynamically adds `ai-reliability-fw/src` to `sys.path` at runtime via `_ensure_reliability_fw_on_path()`. The package dependency is pinned in `pyproject.toml`, and the container build installs the wheel from the GitHub release asset.
 
 ## Dataset format
 
@@ -90,6 +90,7 @@ Static JSON files under `datasets/phishing/`, `datasets/impersonation/`, `datase
 
 ## Guardrails
 
-- `InputIntegrityValidator` rejects prompt-injection patterns before any LLM call.
+- `InputIntegrityValidator` enforces the required evidence bundle shape before any LLM call.
+- The provider client receives a bounded structured summary of the email rather than the full raw message.
 - `JsonSchemaValidator` enforces the output schema (`predicted_label`, `risk_score`, `confidence`, `explanation`); schema violations trigger retries via `RetryPolicy`.
 - If `PhaseExecutor` returns a non-SUCCESS status, the adapter raises `RuntimeError` — the runner logs and skips the sample rather than silently recording a fabricated label that would bias metrics.

@@ -2,9 +2,18 @@ import json
 import tempfile
 import unittest
 import uuid
+from pathlib import Path
 from types import SimpleNamespace
 
-from evaluation.db_report import _apply_demo_safe, _compute_llm_summary, _normalize_result
+from jsonschema import Draft202012Validator
+
+from evaluation.db_report import (
+    _apply_demo_safe,
+    _apply_demo_safe_explanation_support,
+    _compute_llm_summary,
+    _normalize_result,
+    _resolve_outputs_dir,
+)
 from evaluation.report import write_json_report, write_markdown_report, write_html_report
 
 
@@ -48,13 +57,39 @@ class ReportingTests(unittest.TestCase):
             "explanation": "Sensitive text",
             "signals_json": {"a": 1},
             "timeline_json": ["x"],
+            "explanation_support_notes": ["secret evidence"],
             "predicted_label": "benign",
         }
         sanitized = _apply_demo_safe(payload)
         self.assertIsNone(sanitized["explanation"])
         self.assertIsNone(sanitized["signals_json"])
         self.assertIsNone(sanitized["timeline_json"])
+        self.assertEqual(sanitized["explanation_support_notes"], [])
         self.assertEqual(sanitized["predicted_label"], "benign")
+
+    def test_apply_demo_safe_explanation_support(self):
+        explanation_support = {
+            "supported_count": 1,
+            "weak_count": 0,
+            "unsupported_count": 1,
+            "unavailable_count": 0,
+            "examples": [
+                {
+                    "sample_id": "s2",
+                    "actual_label": "phishing",
+                    "predicted_label": "phishing",
+                    "status": "unsupported",
+                    "notes": ["secret evidence"],
+                }
+            ],
+        }
+        sanitized = _apply_demo_safe_explanation_support(explanation_support)
+        self.assertEqual(sanitized["supported_count"], 1)
+        self.assertEqual(sanitized["examples"], [])
+
+    def test_resolve_outputs_dir_sanitizes_snapshot_run_name(self):
+        resolved = _resolve_outputs_dir(True, "outputs/demo", "../a/b", "outputs")
+        self.assertEqual(resolved, str(Path("outputs/demo") / "a-b"))
 
     def test_normalize_result_missing_call_id(self):
         result = SimpleNamespace(
@@ -100,9 +135,9 @@ class ReportingTests(unittest.TestCase):
             }
         ]
         label_stats = {
-            "phishing": {"precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
-            "impersonation": {"precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
-            "benign": {"precision": 1, "recall": 1, "f1": 1, "tp": 1, "fp": 0, "fn": 0},
+            "phishing": {"label": "phishing", "precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
+            "impersonation": {"label": "impersonation", "precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
+            "benign": {"label": "benign", "precision": 1, "recall": 1, "f1": 1, "tp": 1, "fp": 0, "fn": 0},
         }
         llm_summary = {
             "providers": {},
@@ -165,12 +200,147 @@ class ReportingTests(unittest.TestCase):
                 outputs_dir=tmpdir,
             )
             payload = json.loads(path.read_text())
+        schema = json.loads(
+            (Path(__file__).resolve().parents[1] / "schemas" / "result_schema.json").read_text()
+        )
+        errors = sorted(
+            Draft202012Validator(schema).iter_errors(payload),
+            key=lambda error: list(error.path),
+        )
         self.assertIn("summary", payload)
         self.assertIn("results", payload)
         self.assertIn("llm", payload["summary"])
         self.assertIn("classification_metrics", payload["summary"])
         self.assertIn("confusion_matrix", payload["summary"])
         self.assertIn("explanation_support", payload["summary"])
+        self.assertEqual(errors, [])
+
+    def test_report_outputs_stay_within_outputs_dir(self):
+        results = [
+            {
+                "sample_id": "s1",
+                "actual_label": "benign",
+                "predicted_label": "benign",
+                "risk_score": 0.1,
+                "confidence": 0.9,
+                "explanation": None,
+                "signals_json": None,
+                "timeline_json": None,
+                "reliability_run_id": "r1",
+                "reliability_phase_id": "p1",
+                "reliability_prompt_id": "pr1",
+                "reliability_call_id": None,
+                "provider": None,
+                "model": None,
+                "latency_ms": None,
+                "input_tokens": None,
+                "output_tokens": None,
+                "token_cost_usd": None,
+            }
+        ]
+        label_stats = {
+            "phishing": {"label": "phishing", "precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
+            "impersonation": {"label": "impersonation", "precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
+            "benign": {"label": "benign", "precision": 1, "recall": 1, "f1": 1, "tp": 1, "fp": 0, "fn": 0},
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            json_path = write_json_report(
+                results,
+                accuracy=1.0,
+                label_stats=label_stats,
+                name="../unsafe/run",
+                model="test-model",
+                report_basename="../../bad/report name",
+                outputs_dir=tmpdir,
+            )
+            md_path = write_markdown_report(
+                results,
+                accuracy=1.0,
+                label_stats=label_stats,
+                name="../unsafe/run",
+                model="test-model",
+                report_basename="../../bad/report name",
+                outputs_dir=tmpdir,
+            )
+            html_path = write_html_report(
+                results,
+                accuracy=1.0,
+                label_stats=label_stats,
+                name="../unsafe/run",
+                model="test-model",
+                report_basename="../../bad/report name",
+                outputs_dir=tmpdir,
+            )
+
+        for path in (json_path, md_path, html_path):
+            self.assertEqual(path.parent, Path(tmpdir))
+            self.assertNotIn("..", path.name)
+            self.assertNotIn("/", path.name)
+            self.assertNotIn("\\", path.name)
+
+    def test_markdown_report_escapes_sensitive_content(self):
+        results = [
+            {
+                "sample_id": "sample|1",
+                "actual_label": "benign",
+                "predicted_label": "benign",
+                "risk_score": 0.1,
+                "confidence": 0.9,
+                "explanation": None,
+                "signals_json": None,
+                "timeline_json": None,
+                "reliability_run_id": "r1",
+                "reliability_phase_id": "p1",
+                "reliability_prompt_id": "pr1",
+                "reliability_call_id": "c1",
+                "provider": "openai|lab",
+                "model": "gpt-4o-mini",
+                "latency_ms": 120.0,
+                "input_tokens": 200,
+                "output_tokens": 80,
+                "token_cost_usd": 0.12,
+                "explanation_support_status": "unsupported",
+                "explanation_support_notes": ["needs *escape* | here"],
+            }
+        ]
+        label_stats = {
+            "phishing": {"label": "phishing", "precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
+            "impersonation": {"label": "impersonation", "precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
+            "benign": {"label": "benign", "precision": 1, "recall": 1, "f1": 1, "tp": 1, "fp": 0, "fn": 0},
+        }
+        explanation_support = {
+            "supported_count": 0,
+            "weak_count": 0,
+            "unsupported_count": 1,
+            "unavailable_count": 0,
+            "examples": [
+                {
+                    "sample_id": "sample|1",
+                    "actual_label": "benign",
+                    "predicted_label": "benign",
+                    "status": "unsupported",
+                    "notes": ["needs *escape* | here"],
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = write_markdown_report(
+                results,
+                accuracy=1.0,
+                label_stats=label_stats,
+                name="run *one*",
+                model="gpt-4o-mini",
+                explanation_support=explanation_support,
+                generated_at="2026-03-23T00:00:00Z",
+                outputs_dir=tmpdir,
+            )
+            content = path.read_text()
+
+        self.assertIn("# Evaluation Report: run \\*one\\*", content)
+        self.assertIn("| sample\\|1 | benign | benign | + | 0.10 | 0.90 | unsupported |", content)
+        self.assertIn("- Provider: openai\\|lab", content)
+        self.assertIn("- Model: gpt-4o-mini", content)
+        self.assertIn("needs \\*escape\\* \\| here", content)
 
     def test_markdown_report_includes_sections_and_details(self):
         results = [
@@ -220,9 +390,9 @@ class ReportingTests(unittest.TestCase):
             },
         ]
         label_stats = {
-            "phishing": {"precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
-            "impersonation": {"precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
-            "benign": {"precision": 1, "recall": 1, "f1": 1, "tp": 1, "fp": 0, "fn": 0},
+            "phishing": {"label": "phishing", "precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
+            "impersonation": {"label": "impersonation", "precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
+            "benign": {"label": "benign", "precision": 1, "recall": 1, "f1": 1, "tp": 1, "fp": 0, "fn": 0},
         }
         llm_summary = {
             "providers": {"openai": 1},
@@ -373,9 +543,9 @@ class ReportingTests(unittest.TestCase):
             },
         ]
         label_stats = {
-            "phishing": {"precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
-            "impersonation": {"precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
-            "benign": {"precision": 1, "recall": 1, "f1": 1, "tp": 1, "fp": 0, "fn": 0},
+            "phishing": {"label": "phishing", "precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
+            "impersonation": {"label": "impersonation", "precision": 0, "recall": 0, "f1": 0, "tp": 0, "fp": 0, "fn": 0},
+            "benign": {"label": "benign", "precision": 1, "recall": 1, "f1": 1, "tp": 1, "fp": 0, "fn": 0},
         }
         llm_summary = {
             "providers": {"openai": 1},

@@ -6,6 +6,7 @@ so PhaseExecutor can use it without modification.
 """
 from __future__ import annotations
 
+import asyncio
 import time
 
 import anthropic
@@ -42,20 +43,34 @@ class AnthropicClient(BaseLLMClient):
         Anthropic API key. If None, reads from ANTHROPIC_API_KEY env var.
     """
 
-    def __init__(self, model: str = "claude-haiku-4-5-20251001", api_key: str | None = None) -> None:
+    def __init__(
+        self,
+        model: str = "claude-haiku-4-5-20251001",
+        api_key: str | None = None,
+        timeout_seconds: float = 60.0,
+    ) -> None:
         self._model = model
+        self._timeout_seconds = timeout_seconds
         self._client = anthropic.AsyncAnthropic(api_key=api_key)
 
     async def call(self, prompt: str, model: str | None = None) -> dict:
         effective_model = model or self._model
 
         t0 = time.perf_counter()
-        response = await self._client.messages.create(
-            model=effective_model,
-            max_tokens=512,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": prompt}],
-        )
+        try:
+            response = await asyncio.wait_for(
+                self._client.messages.create(
+                    model=effective_model,
+                    max_tokens=512,
+                    system=SYSTEM_PROMPT,
+                    messages=[{"role": "user", "content": prompt}],
+                ),
+                timeout=self._timeout_seconds,
+            )
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError(
+                f"Anthropic request timed out after {self._timeout_seconds:.1f}s"
+            ) from exc
         latency_ms = int((time.perf_counter() - t0) * 1000)
 
         text_block = next(b for b in response.content if b.type == "text")

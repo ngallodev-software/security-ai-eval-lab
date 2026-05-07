@@ -22,8 +22,56 @@ success() { echo -e "${GREEN}[install]${NC} $*"; }
 warn()    { echo -e "${YELLOW}[install]${NC} $*"; }
 die()     { echo -e "${RED}[install] ERROR:${NC} $*" >&2; exit 1; }
 
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
+
+get_env_value() {
+    local key="$1"
+    local current_value="${!key:-}"
+    local line value
+
+    if [[ -n "$current_value" ]]; then
+        printf '%s' "$current_value"
+        return 0
+    fi
+
+    if [[ -f .env ]]; then
+        line="$(grep -E "^[[:space:]]*${key}=" .env | tail -n 1 || true)"
+        value="${line#*=}"
+        value="${value%$'\r'}"
+        value="${value%\"}"
+        value="${value#\"}"
+        value="${value%\'}"
+        value="${value#\'}"
+        printf '%s' "$value"
+    fi
+}
+
+set_env_value() {
+    local key="$1"
+    local value="$2"
+    local tmp_file
+
+    tmp_file="$(mktemp)"
+    awk -v key="$key" -v value="$value" '
+        BEGIN { updated = 0 }
+        $0 ~ "^[[:space:]]*" key "=" {
+            print key "=" value
+            updated = 1
+            next
+        }
+        { print }
+        END {
+            if (!updated) {
+                print key "=" value
+            }
+        }
+    ' .env > "$tmp_file"
+    mv "$tmp_file" .env
+}
 
 # ── Step 1: Prerequisites ─────────────────────────────────────────────────────
 info "Checking prerequisites..."
@@ -44,23 +92,41 @@ success "Docker $(docker --version | awk '{print $3}' | tr -d ',') + Compose rea
 # ── Step 2: .env setup ────────────────────────────────────────────────────────
 if [[ ! -f .env ]]; then
     info "Creating .env from .env.sample..."
+    umask 077
     cp .env.sample .env
 fi
 
-# Source existing .env so we can check what's already set
-set -o allexport
-# shellcheck disable=SC1091
-source .env 2>/dev/null || true
-set +o allexport
+chmod 600 .env
+
+POSTGRES_USER="$(get_env_value POSTGRES_USER)"
+POSTGRES_PASSWORD="$(get_env_value POSTGRES_PASSWORD)"
+POSTGRES_DB="$(get_env_value POSTGRES_DB)"
+OPENAI_API_KEY="$(get_env_value OPENAI_API_KEY)"
+REGISTRY_TOKEN="$(get_env_value REGISTRY_TOKEN)"
+AI_RELIABILITY_FW_VERSION="$(get_env_value AI_RELIABILITY_FW_VERSION)"
+AI_RELIABILITY_FW_WHEEL_URL="$(get_env_value AI_RELIABILITY_FW_WHEEL_URL)"
+AI_RELIABILITY_FW_WHEEL_SHA256="$(get_env_value AI_RELIABILITY_FW_WHEEL_SHA256)"
+export POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB OPENAI_API_KEY REGISTRY_TOKEN
+export AI_RELIABILITY_FW_VERSION AI_RELIABILITY_FW_WHEEL_URL AI_RELIABILITY_FW_WHEEL_SHA256
+export HOST_UID="$(id -u)"
+export HOST_GID="$(id -g)"
+
+if [[ -z "${AI_RELIABILITY_FW_VERSION:-}" ]]; then
+    AI_RELIABILITY_FW_VERSION="0.2.1"
+fi
+if [[ -z "${AI_RELIABILITY_FW_WHEEL_URL:-}" ]]; then
+    AI_RELIABILITY_FW_WHEEL_URL="https://github.com/ngallodev-software/ai-reliability-fw/releases/download/v${AI_RELIABILITY_FW_VERSION}/ai_reliability_fw-${AI_RELIABILITY_FW_VERSION}-py3-none-any.whl"
+fi
 
 # Prompt for OPENAI_API_KEY if not set or still placeholder
 if [[ -z "${OPENAI_API_KEY:-}" || "${OPENAI_API_KEY:-}" == "sk-REPLACE_ME" ]]; then
     if [[ -t 0 ]]; then
         echo -e "${YELLOW}[install]${NC} OPENAI_API_KEY is required for live evaluation runs."
-        read -rp "         Enter your OpenAI API key (sk-...), or press Enter to skip: " input_key
+        read -rsp "         Enter your OpenAI API key (sk-...), or press Enter to skip: " input_key
+        echo
         if [[ -n "$input_key" ]]; then
-            sed -i "s|^OPENAI_API_KEY=.*|OPENAI_API_KEY=${input_key}|" .env
             OPENAI_API_KEY="$input_key"
+            set_env_value OPENAI_API_KEY "$input_key"
         else
             warn "OPENAI_API_KEY not set — dry-run mode will work but live evaluation requires it."
         fi
@@ -74,15 +140,34 @@ if [[ -z "${REGISTRY_TOKEN:-}" || "${REGISTRY_TOKEN:-}" == "REPLACE_ME" ]]; then
     if [[ -t 0 ]]; then
         echo -e "${YELLOW}[install]${NC} REGISTRY_TOKEN is required to fetch the ai-reliability-fw wheel."
         echo    "         Create a GitHub PAT (classic, repo scope) at: github.com/settings/tokens"
-        read -rp "         Enter your GitHub PAT (ghp_...): " input_token
+        read -rsp "         Enter your GitHub PAT (ghp_...): " input_token
+        echo
         if [[ -n "$input_token" ]]; then
-            sed -i "s|^REGISTRY_TOKEN=.*|REGISTRY_TOKEN=${input_token}|" .env
             REGISTRY_TOKEN="$input_token"
+            set_env_value REGISTRY_TOKEN "$input_token"
         else
             die "REGISTRY_TOKEN is required to build the Docker image. Aborting."
         fi
     else
         die "REGISTRY_TOKEN is not set. Export it before running: REGISTRY_TOKEN=ghp_... ./install.sh"
+    fi
+fi
+
+# Prompt for AI_RELIABILITY_FW_WHEEL_SHA256 if not set or still placeholder
+if [[ -z "${AI_RELIABILITY_FW_WHEEL_SHA256:-}" || "${AI_RELIABILITY_FW_WHEEL_SHA256:-}" == "REPLACE_ME" ]]; then
+    if [[ -t 0 ]]; then
+        echo -e "${YELLOW}[install]${NC} AI_RELIABILITY_FW_WHEEL_SHA256 is required to verify the ai-reliability-fw wheel."
+        echo    "         Resolve it from a trusted source for:"
+        echo    "         ${AI_RELIABILITY_FW_WHEEL_URL}"
+        read -rp "         Enter the trusted SHA-256 digest: " input_sha
+        if [[ -n "$input_sha" ]]; then
+            AI_RELIABILITY_FW_WHEEL_SHA256="$input_sha"
+            set_env_value AI_RELIABILITY_FW_WHEEL_SHA256 "$input_sha"
+        else
+            die "AI_RELIABILITY_FW_WHEEL_SHA256 is required to verify the wheel. Aborting."
+        fi
+    else
+        die "AI_RELIABILITY_FW_WHEEL_SHA256 is not set. Export it before running install.sh."
     fi
 fi
 
@@ -106,7 +191,7 @@ success "Postgres healthy"
 
 # ── Step 4: Migrations ────────────────────────────────────────────────────────
 info "Building app image (this installs the ai-reliability-fw wheel)..."
-$COMPOSE build --build-arg REGISTRY_TOKEN="${REGISTRY_TOKEN}" migrate
+$COMPOSE build migrate
 
 info "Running Alembic migrations..."
 $COMPOSE --profile migrate up migrate

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, asdict
+from email import message_from_string
+from email.utils import parseaddr
 from typing import Any, Dict, List, Optional
 import re
 import time
 import uuid
-from urllib.parse import urlparse
 
 
 # -----------------------------
@@ -65,9 +66,81 @@ KNOWN_BRANDS = [
     "Google",
 ]
 
+MAX_LLM_EMAIL_CHARS = 12_000
+MAX_LLM_BODY_EXCERPT_CHARS = 1_500
+
+
+def bound_email_text_for_llm(email_text: str, max_chars: int = MAX_LLM_EMAIL_CHARS) -> str:
+    if len(email_text) <= max_chars:
+        return email_text
+    return email_text[:max_chars]
+
+
+def extract_subject(email_text: str) -> Optional[str]:
+    subject = _header_message(email_text).get("Subject")
+    if not subject:
+        return None
+    return subject.strip() or None
+
+
+def extract_body_text(email_text: str) -> str:
+    parts = re.split(r"\r?\n\r?\n", email_text, maxsplit=1)
+    if len(parts) != 2:
+        return ""
+    return parts[1].strip()
+
+
+def build_llm_payload(email_text: str, signals: Dict[str, Any]) -> Dict[str, Any]:
+    message = _header_message(email_text)
+    from_header = (message.get("From") or "").strip()
+    subject = extract_subject(email_text)
+    body_text = extract_body_text(email_text)
+    body_excerpt = body_text[:MAX_LLM_BODY_EXCERPT_CHARS].strip()
+    urls = signals.get("urls") or []
+
+    summary_lines = [
+        f"From: {from_header or 'N/A'}",
+        f"Subject: {subject or 'N/A'}",
+        f"URL count: {len(urls)}",
+    ]
+    if urls:
+        summary_lines.append("URLs:\n" + "\n".join(str(url) for url in urls[:10]))
+    if body_excerpt:
+        summary_lines.append("Body excerpt:\n" + body_excerpt)
+
+    summarized_email = bound_email_text_for_llm("\n".join(summary_lines))
+    payload = {
+        "email_text": summarized_email,
+        "signals": signals,
+        "email_context": {
+            "from_header": from_header or None,
+            "subject": subject,
+            "body_excerpt": body_excerpt or None,
+            "body_excerpt_truncated": len(body_text) > MAX_LLM_BODY_EXCERPT_CHARS,
+        },
+    }
+    if len(body_text) > MAX_LLM_BODY_EXCERPT_CHARS:
+        payload["email_body_truncated"] = True
+        payload["email_body_original_chars"] = len(body_text)
+    if len(summarized_email) >= MAX_LLM_EMAIL_CHARS:
+        payload["email_text_truncated"] = True
+    payload["raw_email_original_chars"] = len(email_text)
+    return payload
+
+
+def _header_message(email_text: str):
+    return message_from_string(email_text)
+
 
 def extract_sender_domain(email_text: str) -> Optional[str]:
-    match = re.search(r"From:\s.*?<[^@]+@([^>]+)>", email_text, re.IGNORECASE)
+    header = _header_message(email_text).get("From")
+    if not header:
+        return None
+
+    _, address = parseaddr(header)
+    if "@" not in address:
+        return None
+    match = re.search(r"@([^>\s]+)", address)
     if match:
         return match.group(1).strip().lower()
     return None
@@ -78,12 +151,17 @@ def extract_urls(email_text: str) -> List[str]:
 
 
 def parse_auth_results(email_text: str) -> Dict[str, Optional[str]]:
-    # MVP stub: parse only if present in text
+    # Read only header-authentication fields so a spoofed body cannot
+    # manufacture SPF/DKIM/DMARC outcomes.
     spf = None
     dkim = None
     dmarc = None
 
-    lower = email_text.lower()
+    msg = _header_message(email_text)
+    auth_values: list[str] = []
+    for header_name in ("Authentication-Results", "Received-SPF", "ARC-Authentication-Results"):
+        auth_values.extend(msg.get_all(header_name, []))
+    lower = "\n".join(auth_values).lower()
 
     if "spf=fail" in lower:
         spf = "fail"
@@ -165,26 +243,49 @@ class FakeReliabilityExecutor(ReliabilityExecutorProtocol):
 
     def _build_result(self, *, phase_id: str, prompt_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         signals = payload["signals"]
+        email_context = payload.get("email_context", {})
         sender_domain = signals.get("sender_domain") or ""
         brand = signals.get("brand_similarity", {}).get("matched_brand")
         domain_age_days = signals.get("domain_age_days")
         urls = signals.get("urls", [])
+        subject = str(email_context.get("subject") or "")
+        body_excerpt = str(email_context.get("body_excerpt") or "")
+        combined_text = f"{subject} {body_excerpt} {payload.get('email_text', '')}".lower()
 
         suspicious = False
         predicted_label = "benign"
         risk_score = 0.15
         confidence = 0.72
         explanation = "Low-risk message with limited suspicious indicators."
+        credential_lure = any(
+            term in combined_text
+            for term in ("login", "verify", "reset", "password", "credential", "account")
+        ) or any(
+            any(term in url.lower() for term in ("login", "verify", "reset", "password"))
+            for url in urls
+        )
+        financial_lure = any(
+            term in combined_text
+            for term in ("invoice", "payment", "billing", "vendor", "confirm payment", "payment details")
+        )
+        urgent_social = any(
+            term in combined_text for term in ("quick favor", "urgent", "reply", "phone number")
+        )
 
         if brand and domain_age_days is not None and domain_age_days < 30:
             suspicious = True
 
-        if "gmail.com" in sender_domain and "quick favor" in payload["email_text"].lower():
+        if "gmail.com" in sender_domain and urgent_social:
             predicted_label = "impersonation"
             risk_score = 0.89
             confidence = 0.90
             explanation = "Likely impersonation: personal sender domain plus urgent social-engineering language."
-        elif suspicious or any("login" in url.lower() or "verify" in url.lower() for url in urls):
+        elif suspicious and brand and not urls and financial_lure:
+            predicted_label = "impersonation"
+            risk_score = 0.90
+            confidence = 0.88
+            explanation = "Likely impersonation: brand lookalike sender with business-context payment pretext."
+        elif credential_lure or suspicious or any("login" in url.lower() or "verify" in url.lower() for url in urls):
             predicted_label = "phishing"
             risk_score = 0.93
             confidence = 0.91
@@ -280,9 +381,9 @@ class EmailThreatInvestigationAgent:
             brand_similarity=brand_similarity,
         )
 
-        payload = {
-            "email_text": email_text,
-            "signals": {
+        payload = build_llm_payload(
+            email_text,
+            {
                 "sender_domain": signals.sender_domain,
                 "urls": signals.urls,
                 "domain_age_days": signals.domain_age_days,
@@ -291,7 +392,7 @@ class EmailThreatInvestigationAgent:
                 "dmarc_result": signals.dmarc_result,
                 "brand_similarity": asdict(signals.brand_similarity),
             },
-        }
+        )
 
         timeline.append("llm classification")
         llm_result = self.executor.execute(

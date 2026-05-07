@@ -81,11 +81,11 @@ flowchart TD
 
 - Phishing, impersonation, and benign email classification
 - Deterministic signal extraction: sender domain, URLs, auth results (SPF/DKIM/DMARC), domain age, brand similarity
-- LLM reasoning via ai-reliability-fw's `PhaseExecutor` over Anthropic API with input/output validation and retry logic
+- LLM reasoning via ai-reliability-fw's `PhaseExecutor` over OpenAI or Anthropic with structured email summaries, output validation, and retry logic
 - Reproducible evaluation runs with per-sample results stored in the eval-lab tables in Postgres
 - Accuracy, precision, recall, F1, macro/micro/weighted averages, and confusion matrix
 - Explanation support check (rule-based, lightweight grounding audit)
-- DB-sourced report generation (JSON/Markdown) with demo-safe mode and golden snapshots
+- DB-sourced report generation (JSON/Markdown/HTML) with demo-safe mode and golden snapshots
 - FakeReliabilityExecutor for local testing without a DB or API key
 
 ## Core components
@@ -94,6 +94,7 @@ flowchart TD
 |---|---|---|
 | `EmailThreatInvestigationAgent` | `agents/email_threat_agent.py` | Sync quickstart agent for the fake executor path |
 | `PhaseExecutorAdapter` | `agents/reliability_adapter.py` | Async bridge to ai-reliability-fw's `PhaseExecutor` |
+| `OpenAIClient` | `llm/openai_client.py` | OpenAI Chat Completions client with request timeout enforcement |
 | `AnthropicClient` | `llm/anthropic_client.py` | Anthropic Messages API client |
 | `EvalRepository` | `db/repository.py` | Persists `evaluation_runs` and `investigation_results` only |
 | Evaluation runner | `evaluation/runner.py` | Loads samples, extracts signals, calls the adapter, stores results, prints metrics |
@@ -139,7 +140,7 @@ See `repo_structure.md`.
 cd /lump/apps/security-ai-eval-lab
 python3 -m examples.run_eval
 
-# Full evaluation run (requires DATABASE_URL and ANTHROPIC_API_KEY)
+# Full evaluation run (requires DATABASE_URL plus the provider-specific API key)
 python3 -m evaluation.runner --dataset datasets/ --name my-run-001 --model claude-haiku-4-5-20251001
 
 # Dry-run (runs inference but skips DB writes)
@@ -151,6 +152,14 @@ python3 -m evaluation.db_report --run-name my-run-001
 # Demo-safe golden snapshot export
 python3 -m evaluation.db_report --run-name my-run-001 --demo-safe --snapshot --generated-at 2026-03-23T00:00:00Z
 ```
+
+## Install Notes
+
+The container build now requires a trusted `AI_RELIABILITY_FW_WHEEL_SHA256` for the exact
+`ai-reliability-fw` wheel being installed. The default URL is derived from
+`AI_RELIABILITY_FW_VERSION`, but you can override it with `AI_RELIABILITY_FW_WHEEL_URL`
+if your release process publishes the wheel somewhere else. `install.sh` will refuse to
+build until the digest is provided.
 
 ## Example output
 
@@ -175,11 +184,13 @@ Accuracy:   90.0%
 
 ## Guardrails / safety boundaries
 
-- Input validation rejects prompt-injection patterns before the LLM is called.
+- Dataset samples are validated against `schemas/sample_schema.json` before any evaluation run is created.
+- Sender and auth signals are parsed from message headers, and the LLM receives a bounded structured summary rather than the full raw email.
 - Output is validated against a JSON schema; non-conforming responses trigger retries.
+- Provider clients enforce explicit request timeouts.
 - Safety flags escalate immediately without retry.
 - All reliability-layer calls are persisted with latency, cost, and retry count in `ai-reliability-fw`; eval-lab stores only evaluation records and cross-reference UUIDs.
-- Reports aggregate totals and surface explanation support status for auditability.
+- Reports aggregate totals, and demo-safe exports redact explanation/evidence details and omit support examples.
 - No live email scanning, no production mail infrastructure, no offensive tooling.
 
 ## Why this matters

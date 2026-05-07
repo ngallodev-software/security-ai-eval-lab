@@ -25,7 +25,12 @@ from evaluation.metrics import (
     compute_confusion_matrix,
 )
 from evaluation.support_check import evaluate_explanation_support
-from evaluation.report import write_json_report, write_markdown_report, write_html_report
+from evaluation.report import (
+    write_json_report,
+    write_markdown_report,
+    write_html_report,
+    _sanitize_basename,
+)
 
 
 def _normalize_result(
@@ -65,7 +70,17 @@ def _apply_demo_safe(result: dict[str, Any]) -> dict[str, Any]:
     sanitized["explanation"] = None
     sanitized["signals_json"] = None
     sanitized["timeline_json"] = None
+    sanitized["explanation_support_notes"] = []
     return sanitized
+
+
+def _apply_demo_safe_explanation_support(
+    explanation_support: dict[str, Any],
+) -> dict[str, Any]:
+    sanitized = dict(explanation_support)
+    sanitized["examples"] = []
+    return sanitized
+
 
 def _compute_llm_summary(call_metadata: dict[uuid.UUID, dict[str, Any]]) -> dict[str, Any]:
     providers = Counter()
@@ -122,7 +137,7 @@ def _compute_llm_summary(call_metadata: dict[uuid.UUID, dict[str, Any]]) -> dict
 
 def _resolve_outputs_dir(snapshot: bool, snapshot_dir: str, run_name: str, outputs_dir: str) -> str:
     if snapshot:
-        return str(Path(snapshot_dir) / run_name)
+        return str(Path(snapshot_dir) / _sanitize_basename(run_name))
     return outputs_dir
 
 def _resolve_generated_at(evaluation_run, generated_at: str | None, snapshot: bool) -> str | None:
@@ -145,15 +160,6 @@ def _derive_model_label(llm_summary: dict[str, Any]) -> str:
     if len(models) == 1:
         return next(iter(models.keys()))
     return "mixed"
-
-def _sanitize_basename(value: str) -> str:
-    return (
-        value.replace(":", "-")
-        .replace("/", "-")
-        .replace(" ", "-")
-        .replace(".", "-")
-    )
-
 
 async def build_reports(
     *,
@@ -219,9 +225,6 @@ async def build_reports(
                     }
                 )
 
-        if demo_safe:
-            payloads = [_apply_demo_safe(p) for p in payloads]
-
         pairs = [(r.actual_label, r.predicted_label) for r in results]
         accuracy = compute_accuracy(pairs)
         label_stats = {
@@ -240,6 +243,10 @@ async def build_reports(
             **support_counts,
             "examples": support_examples,
         }
+
+        if demo_safe:
+            payloads = [_apply_demo_safe(p) for p in payloads]
+            explanation_support = _apply_demo_safe_explanation_support(explanation_support)
 
         model_label = _derive_model_label(llm_summary)
         report_basename = None

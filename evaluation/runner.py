@@ -22,10 +22,12 @@ import json
 import os
 import sys
 import uuid
+from functools import lru_cache
 from datetime import datetime, timezone
 from pathlib import Path
 
 from agents.email_threat_agent import FakeReliabilityExecutor
+from agents.email_threat_agent import build_llm_payload
 from db.repository import EvalRepository
 from db.session import async_session as eval_session
 from evaluation.metrics import (
@@ -36,18 +38,42 @@ from evaluation.metrics import (
 )
 from evaluation.report import write_json_report, write_markdown_report, write_html_report
 from evaluation.support_check import evaluate_explanation_support
+from jsonschema import Draft202012Validator
 
 
 # ---------------------------------------------------------------------------
 # Dataset loading
 # ---------------------------------------------------------------------------
 
+@lru_cache(maxsize=1)
+def _get_sample_schema() -> dict:
+    schema_path = Path(__file__).resolve().parents[1] / "schemas" / "sample_schema.json"
+    with open(schema_path, "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def _format_validation_errors(path: Path, sample: dict, validator: Draft202012Validator) -> list[str]:
+    errors = []
+    for error in validator.iter_errors(sample):
+        location = "$" if not error.path else "$." + ".".join(str(part) for part in error.path)
+        errors.append(f"{location}: {error.message}")
+    if not errors:
+        return []
+    return [f"{path}: " + "; ".join(errors)]
+
+
 def load_samples(dataset_root: str) -> list[dict]:
     root = Path(dataset_root)
+    validator = Draft202012Validator(_get_sample_schema())
     samples = []
+    validation_errors = []
     for path in sorted(root.rglob("*.json")):
         with open(path, "r", encoding="utf-8") as fh:
-            samples.append(json.load(fh))
+            sample = json.load(fh)
+        validation_errors.extend(_format_validation_errors(path, sample, validator))
+        samples.append(sample)
+    if validation_errors:
+        raise ValueError("Invalid dataset samples:\n" + "\n".join(validation_errors))
     return samples
 
 
@@ -117,7 +143,7 @@ async def investigate_sample(
         },
     }
 
-    payload = {"email_text": sample["email_text"], "signals": signals}
+    payload = build_llm_payload(sample["email_text"], signals)
 
     timeline.append("llm classification")
     fw_result = await adapter.execute_async(
@@ -159,7 +185,15 @@ async def investigate_sample(
 # ---------------------------------------------------------------------------
 
 async def run_evaluation(dataset_path: str, name: str, model: str, provider: str, dry_run: bool) -> None:
-    samples = load_samples(dataset_path)
+    classification_provider = os.environ.get("CLASSIFICATION_PROVIDER") or provider
+    classification_model = os.environ.get("CLASSIFICATION_MODEL") or model
+
+    try:
+        samples = load_samples(dataset_path)
+    except (OSError, ValueError) as exc:
+        print(f"Invalid dataset: {exc}", file=sys.stderr)
+        return
+
     if not samples:
         print("No samples found.", file=sys.stderr)
         return
@@ -187,9 +221,6 @@ async def run_evaluation(dataset_path: str, name: str, model: str, provider: str
         # Resolve classification-stage provider/model.
         # CLASSIFICATION_PROVIDER / CLASSIFICATION_MODEL are the stage-specific overrides.
         # Fall back to the CLI args (which themselves fall back to LLM_PROVIDER / DEFAULT_MODEL).
-        classification_provider = os.environ.get("CLASSIFICATION_PROVIDER") or provider
-        classification_model = os.environ.get("CLASSIFICATION_MODEL") or model
-
         if classification_provider == "anthropic":
             from llm.anthropic_client import AnthropicClient
             llm_client = AnthropicClient(model=classification_model)
@@ -200,32 +231,57 @@ async def run_evaluation(dataset_path: str, name: str, model: str, provider: str
         adapter = PhaseExecutorAdapter(llm_client=llm_client)
         async with eval_session() as eval_db:
             eval_repo = EvalRepository(eval_db)
-
-            # Create the evaluation run record.
-            evaluation_run_id = await eval_repo.create_evaluation_run(
-                {
-                    "name": name,
-                    "dataset_name": dataset_path,
-                    "model_label": model,
-                    "started_at": datetime.now(timezone.utc),
-                }
-            )
-            print(f"evaluation_run_id: {evaluation_run_id}\n")
-
-            for sample in samples:
-                print(f"  investigating {sample['id']} (actual={sample['label']}) ...", end=" ", flush=True)
-                try:
-                    result = await investigate_sample(sample, adapter)
-                except RuntimeError as exc:
-                    print(f"FAILED — {exc}", file=sys.stderr)
-                    continue
-                results.append(result)
-                print(f"predicted={result['predicted_label']}  score={result['risk_score']:.2f}")
-                await eval_repo.insert_investigation_result(
-                    {**result, "evaluation_run_id": evaluation_run_id}
+            evaluation_run_id = None
+            run_status = "completed"
+            try:
+                # Create the evaluation run record.
+                evaluation_run_id = await eval_repo.create_evaluation_run(
+                    {
+                        "name": name,
+                        "dataset_name": dataset_path,
+                        "model_label": classification_model,
+                        "started_at": datetime.now(timezone.utc),
+                    }
                 )
+                print(f"evaluation_run_id: {evaluation_run_id}\n")
 
-            await eval_repo.mark_evaluation_run_complete(evaluation_run_id)
+                had_failures = False
+                for sample in samples:
+                    print(
+                        f"  investigating {sample['id']} (actual={sample['label']}) ...",
+                        end=" ",
+                        flush=True,
+                    )
+                    try:
+                        result = await investigate_sample(sample, adapter)
+                    except RuntimeError as exc:
+                        had_failures = True
+                        print(f"FAILED — {exc}", file=sys.stderr)
+                        continue
+                    results.append(result)
+                    print(f"predicted={result['predicted_label']}  score={result['risk_score']:.2f}")
+                    await eval_repo.insert_investigation_result(
+                        {**result, "evaluation_run_id": evaluation_run_id}
+                    )
+
+                run_status = "failed" if had_failures else "completed"
+            except Exception:
+                run_status = "failed"
+                if evaluation_run_id is not None:
+                    try:
+                        await eval_repo.mark_evaluation_run_complete(
+                            evaluation_run_id,
+                            status=run_status,
+                        )
+                    except Exception:
+                        pass
+                raise
+            else:
+                if evaluation_run_id is not None:
+                    await eval_repo.mark_evaluation_run_complete(
+                        evaluation_run_id,
+                        status=run_status,
+                    )
 
     # -----------------------------------------------------------------------
     # Summary metrics
@@ -302,7 +358,7 @@ async def run_evaluation(dataset_path: str, name: str, model: str, provider: str
             accuracy,
             label_stats,
             name,
-            model,
+            classification_model,
             llm_summary=llm_summary,
             classification_metrics=classification_metrics,
             confusion_matrix=confusion_matrix,
@@ -314,7 +370,7 @@ async def run_evaluation(dataset_path: str, name: str, model: str, provider: str
             accuracy,
             label_stats,
             name,
-            model,
+            classification_model,
             llm_summary=llm_summary,
             classification_metrics=classification_metrics,
             confusion_matrix=confusion_matrix,
@@ -326,7 +382,7 @@ async def run_evaluation(dataset_path: str, name: str, model: str, provider: str
             accuracy,
             label_stats,
             name,
-            model,
+            classification_model,
             llm_summary=llm_summary,
             classification_metrics=classification_metrics,
             confusion_matrix=confusion_matrix,

@@ -31,7 +31,11 @@ from src.core.models import FailureCategory
 from src.validators.input_schema_validator import InputIntegrityValidator
 from src.validators.json_schema_validator import JsonSchemaValidator
 
-from agents.email_threat_agent import ReliabilityExecutorProtocol
+from agents.email_threat_agent import (
+    MAX_LLM_EMAIL_CHARS,
+    ReliabilityExecutorProtocol,
+    bound_email_text_for_llm,
+)
 from db.session import DATABASE_URL as _DATABASE_URL
 
 # Initialize the reliability-fw with the host app's connection string.
@@ -237,9 +241,16 @@ class PhaseExecutorAdapter(ReliabilityExecutorProtocol):
             resolved_prompt_id = await self._ensure_prompt(repo)
             run_id = await self._create_run(repo)
 
-            # Pass the dict directly — InputIntegrityValidator expects a dict with .get().
-            # PhaseExecutor converts it to str via str(input_artifact) before the LLM call.
-            input_artifact = structured_evidence
+            # Pass a shallow copy so we can bound the raw email text before
+            # PhaseExecutor stringifies the artifact for the LLM request.
+            input_artifact = dict(structured_evidence)
+            email_text = input_artifact.get("email_text")
+            if isinstance(email_text, str):
+                truncated_email_text = bound_email_text_for_llm(email_text)
+                input_artifact["email_text"] = truncated_email_text
+                if len(email_text) > MAX_LLM_EMAIL_CHARS:
+                    input_artifact["email_text_truncated"] = True
+                    input_artifact["email_text_original_chars"] = len(email_text)
 
             fw_result = await executor.execute(
                 run_id=run_id,

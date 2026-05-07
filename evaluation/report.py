@@ -9,9 +9,37 @@ from __future__ import annotations
 
 import html
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+
+_MARKDOWN_ESCAPE_RE = re.compile(r"([\\`*_{}\[\]()#+!|>])")
+_SAFE_BASENAME_RE = re.compile(r"[^A-Za-z0-9_-]+")
+
+
+def _sanitize_basename(value: str) -> str:
+    sanitized = _SAFE_BASENAME_RE.sub("-", value.replace("\\", "/")).strip("-_.")
+    return sanitized or "report"
+
+
+def _escape_markdown_text(value: Any) -> str:
+    text = "" if value is None else str(value)
+    text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\n", " ")
+    return _MARKDOWN_ESCAPE_RE.sub(r"\\\1", text)
+
+
+def _format_markdown_value(value: Any) -> str:
+    if value is None:
+        return "N/A"
+    return _escape_markdown_text(value)
+
+
+def _format_markdown_notes(notes: list[str] | None) -> str:
+    if not notes:
+        return ""
+    return "; ".join(_escape_markdown_text(note) for note in notes)
 
 
 def _format_generated_at(generated_at: str | None, fallback_format: str) -> str:
@@ -60,7 +88,7 @@ def write_json_report(
         payload["summary"]["explanation_support"] = explanation_support
     if llm_summary:
         payload["summary"]["llm"] = llm_summary
-    filename = report_basename or name
+    filename = _sanitize_basename(report_basename or name)
     path = Path(outputs_dir) / f"{filename}.json"
     path.write_text(json.dumps(payload, indent=2, default=str))
     return path
@@ -90,9 +118,9 @@ def write_markdown_report(
         labels = list(classification_metrics["labels"])
 
     lines = [
-        f"# Evaluation Report: {name}",
+        f"# Evaluation Report: {_escape_markdown_text(name)}",
         "",
-        f"**Model:** {model}  ",
+        f"**Model:** {_escape_markdown_text(model)}  ",
         f"**Generated:** {generated_at_str}  ",
         f"**Samples:** {len(results)}  ",
         f"**Accuracy:** {accuracy:.1%}",
@@ -109,7 +137,7 @@ def write_markdown_report(
             support = classification_metrics.get("per_label", {}).get(label, {}).get("support")
         support_str = str(support) if support is not None else "0"
         lines.append(
-            f"| {label} | {support_str} | {s['precision']:.2f} | {s['recall']:.2f} | {s['f1']:.2f}"
+            f"| {_escape_markdown_text(label)} | {support_str} | {s['precision']:.2f} | {s['recall']:.2f} | {s['f1']:.2f}"
             f" | {s['tp']} | {s['fp']} | {s['fn']} |"
         )
     if classification_metrics:
@@ -141,8 +169,22 @@ def write_markdown_report(
             "",
             "## LLM Metadata",
             "",
-            "Providers: " + (", ".join(f"{k} ({v})" for k, v in providers.items()) or "None"),
-            "Models: " + (", ".join(f"{k} ({v})" for k, v in models.items()) or "None"),
+            "Providers: "
+            + (
+                ", ".join(
+                    f"{_escape_markdown_text(k)} ({_format_markdown_value(v)})"
+                    for k, v in providers.items()
+                )
+                or "None"
+            ),
+            "Models: "
+            + (
+                ", ".join(
+                    f"{_escape_markdown_text(k)} ({_format_markdown_value(v)})"
+                    for k, v in models.items()
+                )
+                or "None"
+            ),
             f"LLM calls: {llm_call_count}",
             f"Retries: {retry_count}",
             f"Total input tokens: {total_input_tokens}",
@@ -156,7 +198,9 @@ def write_markdown_report(
     if confusion_matrix:
         labels = confusion_matrix.get("labels", [])
         rows = confusion_matrix.get("rows", {})
-        header = "| Actual \\ Predicted | " + " | ".join(labels) + " |"
+        header = "| Actual \\ Predicted | " + " | ".join(
+            _escape_markdown_text(label) for label in labels
+        ) + " |"
         divider = "|---" * (len(labels) + 1) + "|"
         lines += [
             "",
@@ -168,7 +212,7 @@ def write_markdown_report(
         for actual in labels:
             row = rows.get(actual, {})
             counts = " | ".join(str(row.get(pred, 0)) for pred in labels)
-            lines.append(f"| {actual} | {counts} |")
+            lines.append(f"| {_escape_markdown_text(actual)} | {counts} |")
 
     if explanation_support:
         lines += [
@@ -188,10 +232,10 @@ def write_markdown_report(
                 "|--------|--------|-----------|--------|-------|",
             ]
             for ex in examples:
-                notes = "; ".join(ex.get("notes", [])) if ex.get("notes") else ""
+                notes = _format_markdown_notes(ex.get("notes"))
                 lines.append(
-                    f"| {ex.get('sample_id')} | {ex.get('actual_label')} | {ex.get('predicted_label')}"
-                    f" | {ex.get('status')} | {notes} |"
+                    f"| {_escape_markdown_text(ex.get('sample_id'))} | {_escape_markdown_text(ex.get('actual_label'))} | {_escape_markdown_text(ex.get('predicted_label'))}"
+                    f" | {_escape_markdown_text(ex.get('status'))} | {notes} |"
                 )
 
     lines += [
@@ -205,8 +249,8 @@ def write_markdown_report(
         match = "+" if r["actual_label"] == r["predicted_label"] else "-"
         support_status = r.get("explanation_support_status", "")
         lines.append(
-            f"| {r['sample_id']} | {r['actual_label']} | {r['predicted_label']}"
-            f" | {match} | {r['risk_score']:.2f} | {r['confidence']:.2f} | {support_status} |"
+            f"| {_escape_markdown_text(r['sample_id'])} | {_escape_markdown_text(r['actual_label'])} | {_escape_markdown_text(r['predicted_label'])}"
+            f" | {match} | {r['risk_score']:.2f} | {r['confidence']:.2f} | {_escape_markdown_text(support_status)} |"
         )
 
     lines += [
@@ -216,27 +260,27 @@ def write_markdown_report(
     for r in results:
         lines += [
             "",
-            f"### {r.get('sample_id')}",
-            f"- Provider: {r.get('provider')}",
-            f"- Model: {r.get('model')}",
-            f"- Latency (ms): {r.get('latency_ms')}",
-            f"- Input tokens: {r.get('input_tokens')}",
-            f"- Output tokens: {r.get('output_tokens')}",
-            f"- Token cost (USD): {r.get('token_cost_usd')}",
-            f"- Explanation support: {r.get('explanation_support_status')}",
+            f"### {_escape_markdown_text(r.get('sample_id'))}",
+            f"- Provider: {_format_markdown_value(r.get('provider'))}",
+            f"- Model: {_format_markdown_value(r.get('model'))}",
+            f"- Latency (ms): {_format_markdown_value(r.get('latency_ms'))}",
+            f"- Input tokens: {_format_markdown_value(r.get('input_tokens'))}",
+            f"- Output tokens: {_format_markdown_value(r.get('output_tokens'))}",
+            f"- Token cost (USD): {_format_markdown_value(r.get('token_cost_usd'))}",
+            f"- Explanation support: {_format_markdown_value(r.get('explanation_support_status'))}",
         ]
         notes = r.get("explanation_support_notes") or []
         if notes:
             lines.append("- Explanation support notes:")
             for note in notes:
-                lines.append(f"  - {note}")
+                lines.append(f"  - {_escape_markdown_text(note)}")
         lines += [
-            f"- Reliability run id: {r.get('reliability_run_id')}",
-            f"- Reliability phase id: {r.get('reliability_phase_id')}",
-            f"- Reliability prompt id: {r.get('reliability_prompt_id')}",
-            f"- Reliability call id: {r.get('reliability_call_id')}",
+            f"- Reliability run id: {_format_markdown_value(r.get('reliability_run_id'))}",
+            f"- Reliability phase id: {_format_markdown_value(r.get('reliability_phase_id'))}",
+            f"- Reliability prompt id: {_format_markdown_value(r.get('reliability_prompt_id'))}",
+            f"- Reliability call id: {_format_markdown_value(r.get('reliability_call_id'))}",
         ]
-    filename = report_basename or name
+    filename = _sanitize_basename(report_basename or name)
     path = Path(outputs_dir) / f"{filename}.md"
     path.write_text("\n".join(lines) + "\n")
     return path
@@ -585,7 +629,7 @@ def write_html_report(
         "</html>",
     ]
 
-    filename = report_basename or name
+    filename = _sanitize_basename(report_basename or name)
     path = Path(outputs_dir) / f"{filename}.html"
     path.write_text("\n".join(html_parts) + "\n")
     return path

@@ -23,6 +23,7 @@ env/
 # Evaluation outputs
 outputs/*.json
 outputs/*.md
+outputs/**/*.html
 
 
 # Tool artifacts
